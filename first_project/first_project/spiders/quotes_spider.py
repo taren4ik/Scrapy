@@ -17,7 +17,7 @@ class Spyder(scrapy.Spider):
         """
         for link in response.css(
                 'div.bull-item-content__subject-container a::attr(href)'):
-            time.sleep(1)
+            time.sleep(0.05)
             yield response.follow(link, callback=self.parse_flat)
 
         for i in range(1, 10):  # переход по страницам
@@ -45,3 +45,8 @@ class Spyder(scrapy.Spider):
               'price': soup.find(
                   'span', class_="viewbull-summary-price__value").text.strip()
         }
+
+
+custom_settings = {
+    'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+}
