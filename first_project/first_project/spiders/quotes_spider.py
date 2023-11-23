@@ -3,6 +3,7 @@ import time
 import scrapy
 
 from bs4 import BeautifulSoup
+from scrapy.crawler import CrawlerProcess
 
 
 class Spyder(scrapy.Spider):
@@ -20,7 +21,7 @@ class Spyder(scrapy.Spider):
             time.sleep(0.05)
             yield response.follow(link, callback=self.parse_flat)
 
-        for i in range(1, 10):  # переход по страницам
+        for i in range(1, 200):  # переход по страницам
             next_page = (f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={i}')
             yield response.follow(next_page, callback=self.parse)
 
@@ -47,6 +48,7 @@ class Spyder(scrapy.Spider):
         }
 
 
-custom_settings = {
-    'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-}
+# if __name__ == '__main__':
+#     process = CrawlerProcess()
+#     process.crawl(Spyder)
+#     process.start()

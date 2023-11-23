@@ -3,8 +3,11 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
+
 import random
+
+from scrapy import signals
+from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -116,3 +119,22 @@ class UARotatorMiddleware:
     def process_request(self, request, spider):
         user_agent = random.choice(self.user_agents)
         request.headers['User-Agent'] = user_agent
+
+
+class ProxyMiddleware(HttpProxyMiddleware):
+    def process_request(self, request, spider):
+        proxy_list = [
+                'http://95.167.42.44:8080',
+                'http://93.170.95.116:8080',
+                'http://86.102.7.172:8080',
+                'http://86.102.15.227:8080',
+                'http://86.102.12.118:8080',
+                'http://5.143.74.156:8080',
+                'http://5.143.97.56:8080',
+                'http://5.143.20.195:8080',
+                'http://77.35.152.255:8080',
+                'http://77.35.41.238:8080',
+                'http://77.35.226.140:8080'
+        ]
+        # Выберите прокси случайным образом из списка
+        request.meta['proxy'] = proxy_list[random.randint(0, len(proxy_list) - 1)]
