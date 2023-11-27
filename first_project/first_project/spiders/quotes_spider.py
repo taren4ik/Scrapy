@@ -1,7 +1,6 @@
-from pathlib import Path
 import time
-import scrapy
 
+import scrapy
 from bs4 import BeautifulSoup
 from scrapy.crawler import CrawlerProcess
 
@@ -40,15 +39,14 @@ class Spyder(scrapy.Spider):
               'material': soup.find(
                   'span', {'data-field': 'wallMaterial'}).text.strip(),
               'area': soup.find(
-                  'span', {'data-field': 'areaTotal-share'}).text.strip(),
+                  'span', {'data-field':'areaTotal-share'}).text.strip()[:-7:],
               'count_rooms': soup.find(
                   'span', {'data-field': 'flatType'}).text.strip(),
-              'price': soup.find(
-                  'span', class_="viewbull-summary-price__value").text.strip()
+              'price': soup.find('span', class_="viewbull-summary-price__value").text.strip()[:-1:].replace(' ', '')
         }
 
 
-# if __name__ == '__main__':
-#     process = CrawlerProcess()
-#     process.crawl(Spyder)
-#     process.start()
+if __name__ == '__main__':
+    process = CrawlerProcess()
+    process.crawl(Spyder)
+    process.start()
