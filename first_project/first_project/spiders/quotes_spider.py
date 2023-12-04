@@ -17,7 +17,7 @@ class Spyder(scrapy.Spider):
         """
         for link in response.css(
                 'div.bull-item-content__subject-container a::attr(href)'):
-            time.sleep(0.05)
+            time.sleep(3)
             yield response.follow(link, callback=self.parse_flat)
 
         for i in range(1, 200):  # переход по страницам
@@ -46,7 +46,7 @@ class Spyder(scrapy.Spider):
         }
 
 
-if __name__ == '__main__':
-    process = CrawlerProcess()
-    process.crawl(Spyder)
-    process.start()
+# if __name__ == '__main__':
+#     process = CrawlerProcess()
+#     process.crawl(Spyder)
+#     process.start()

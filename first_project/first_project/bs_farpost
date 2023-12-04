@@ -1,0 +1,145 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+import time
+
+
+# Функция для извлечения информации из одного профиля
+def extract_profile_info(profile_html):
+    soup = BeautifulSoup(profile_html, "html.parser")
+    flat_data = {}
+    # Извлечение ФИО
+    # fio_element = soup.find("a", rel="bookmark")
+    # profile_data["ФИО"] = fio_element.get_text().strip() if fio_element else ''
+    #
+    # for b_tag in soup.find_all("b"):
+    #     key = b_tag.get_text().strip()
+    #     value = b_tag.next_sibling.strip() if b_tag.next_sibling else ''
+    #     profile_data[key] = value
+    if soup.find(
+            'span', {'data-field': 'street-district'}).text.strip():
+        flat_data['srteet_district'] = soup.find(
+            'span', {'data-field': 'street-district'}).text.strip()
+    else:
+        flat_data['srteet_district'] = None
+    if soup.find(
+            'span', {'data-field': 'subject'}).text.strip():
+
+        flat_data['title'] = soup.find(
+            'span', {'data-field': 'subject'}).text.strip()
+    else:
+        flat_data['title'] = None
+    if soup.find(
+            'span', {'data-field': 'wallMaterial'}).text.strip():
+        flat_data['material'] = soup.find(
+            'span', {'data-field': 'wallMaterial'}).text.strip()
+    else:
+        flat_data['material'] = None
+
+    if soup.find(
+            'span', {'data-field': 'areaTotal-share'}).text.strip()[:-7:]:
+
+        flat_data['area'] = soup.find(
+            'span', {'data-field': 'areaTotal-share'}).text.strip()[:-7:]
+    else:
+        flat_data['area'] = None
+
+    if soup.find(
+            'span', {'data-field': 'flatType'}).text.strip():
+
+        flat_data['count_rooms'] = soup.find(
+            'span', {'data-field': 'flatType'}).text.strip()
+    else:
+        flat_data['count_rooms'] = None
+
+    if soup.find('span',
+                 class_="viewbull-summary-price__value").text.strip()[
+       :-1:].replace(' ', ''):
+        flat_data['price'] = soup.find('span',
+                  class_="viewbull-summary-price__value").text.strip()[
+                             :-1:].replace(' ', '')
+    else:
+
+        flat_data['price'] = None
+    return flat_data
+
+
+def safe_request(url, headers):
+    """
+    Выполняет безопасный HTTP-запрос с повторными попытками
+    :param url:
+    :param headers:
+    :return:
+    """
+    while True:
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()  # проверяет, что ответ успешен
+            return response
+        except requests.RequestException as e:
+            print(f"Error fetching {url}: {e}. Retrying in 7 seconds...")
+            time.sleep(7)
+
+
+# Функция для записи профилей в CSV
+def write_profiles_to_csv(profiles, filename='profiles_farpost.csv'):
+    fieldnames = set()
+    for profile in profiles:
+        fieldnames.update(profile.keys())
+
+    with open(filename, 'a', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for profile in profiles:
+            writer.writerow(profile)
+
+
+def scrape_all_profiles(start_url):
+    """
+    Извлекает объявления  на всех страницах
+    :param start_url:
+    :return:
+    """
+    all_profiles = []
+    current_url = start_url
+
+    # Заголовки для имитации браузера user-agent
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    i = 1
+    while current_url:
+        print(f"Processing {current_url}")
+        response = safe_request(current_url, headers)
+        soup = BeautifulSoup(response.content, "html.parser")
+        time.sleep(1)
+        # Извлечение всех ссылок на объявления
+        profile_links = [a["href"] for a in soup.find_all("a",
+                                                          class_="bulletinLink bull-item__self-link auto-shy")]
+
+        # Извлечение информации из каждого профиля
+        for link in profile_links:
+            url = "https://www.farpost.ru" + link
+            profile_response = safe_request(url, headers)
+            profile_info = extract_profile_info(profile_response.content)
+            all_profiles.append(profile_info)
+            time.sleep(1)
+
+        # Запись текущих результатов в файл CSV
+        write_profiles_to_csv(all_profiles)
+        i += 1  # счетчик страниц
+
+        current_url = (
+            f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={i}')
+        #  next_page = soup.find("a", class_="next page-numbers")
+        #   current_url = next_page["href"] if next_page else None
+
+        # Задержка 0.5 секунды перед следующим запросом
+        time.sleep(0.5)
+
+    return all_profiles
+
+
+# Начните с извлечения всех объявлений
+all_profiles = scrape_all_profiles(
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/")
