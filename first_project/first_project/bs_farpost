@@ -8,6 +8,15 @@ import time
 def extract_profile_info(profile_html):
     soup = BeautifulSoup(profile_html, "html.parser")
     flat_data = {}
+    if soup.find('span',
+              {'data-field': 'isAgency'}):
+        flat_data['srteet_district'] = None
+        flat_data['title'] = None
+        flat_data['material'] = None
+        flat_data['area'] = None
+        flat_data['count_rooms'] = None
+        flat_data['price'] = None
+        return  flat_data
     # Извлечение ФИО
     # fio_element = soup.find("a", rel="bookmark")
     # profile_data["ФИО"] = fio_element.get_text().strip() if fio_element else ''

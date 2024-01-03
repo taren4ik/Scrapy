@@ -3,10 +3,15 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-
+import time
 import random
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from scrapy.http import HtmlResponse
+from scrapy.utils.project import get_project_settings
 
 from scrapy import signals
+from fake_useragent import UserAgent
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 
 # useful for handling different item types with a single interface
@@ -107,19 +112,33 @@ class FirstProjectDownloaderMiddleware:
         spider.logger.info("Spider opened: %s" % spider.name)
 
 
-class UARotatorMiddleware:
-    def __init__(self, user_agents):
-        self.user_agents = user_agents
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        user_agents = crawler.settings.get('USER_AGENTS', [])
-        return cls(user_agents)
+class RandomUserAgentMiddleware:
+    def __init__(self):
+        self.ua = UserAgent()
 
     def process_request(self, request, spider):
-        user_agent = random.choice(self.user_agents)
-        request.headers['User-Agent'] = user_agent
+        user_agent = self.ua.random
+        request.headers.setdefault('User-Agent', user_agent)
 
+class SeleniumMiddleware:
+    def __init__(self):
+        settings = get_project_settings()
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--headless')  # Запустить Chrome в фоновом режиме
+        self.driver = webdriver.Chrome(executable_path=settings.get('D:\developer\Scrapy\chromedriver\chromedriver.exe'), options=chrome_options)
+
+    def process_request(self, request, spider):
+        self.driver.get(request.url)
+        time.sleep(5)  # Задержка для загрузки страницы и выполнения JavaScript
+
+        # Находим и нажимаем кнопку "Продолжить"
+        send_button = self.driver.find_element_by_id("send-button")
+        send_button.click()
+        body = self.driver.page_source
+        return HtmlResponse(self.driver.current_url, body=body, encoding='utf-8', request=request)
+
+    def __del__(self):
+        self.driver.quit()
 
 class ProxyMiddleware(HttpProxyMiddleware):
     def process_request(self, request, spider):

@@ -1,4 +1,5 @@
 import time
+import  random
 
 import scrapy
 from bs4 import BeautifulSoup
@@ -15,9 +16,10 @@ class Spyder(scrapy.Spider):
         :param response:
         :return:
         """
+
         for link in response.css(
                 'div.bull-item-content__subject-container a::attr(href)'):
-            time.sleep(3)
+            time.sleep(random.uniform(1, 4))
             yield response.follow(link, callback=self.parse_flat)
 
         for i in range(1, 200):  # переход по страницам
@@ -31,6 +33,7 @@ class Spyder(scrapy.Spider):
         :return:
         """
         soup = BeautifulSoup(response.text, "html.parser")
+        time.sleep(random.uniform(1, 3))
         yield {
               'srteet_district': soup.find(
                   'span', {'data-field': 'street-district'}).text.strip(),
@@ -46,7 +49,7 @@ class Spyder(scrapy.Spider):
         }
 
 
-# if __name__ == '__main__':
-#     process = CrawlerProcess()
-#     process.crawl(Spyder)
-#     process.start()
+if __name__ == '__main__':
+    process = CrawlerProcess()
+    process.crawl(Spyder)
+    process.start()
