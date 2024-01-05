@@ -2,6 +2,9 @@ import requests
 import random
 from bs4 import BeautifulSoup
 import csv
+
+import pandas as pd
+import numpy as np
 import time
 import datetime
 from selenium import webdriver
@@ -101,6 +104,9 @@ def scrape_all_profiles(start_url):
     Извлекает основную информацию на все объявления
     :return:
     """
+    area =  []
+    author = []
+    square = []
     all_profiles = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
@@ -143,16 +149,36 @@ def scrape_all_profiles(start_url):
         # Извлечение всех ссылок на объявления
         profile_links = [a["href"] for a in soup.find_all("a",
                                                           class_="bulletinLink bull-item__self-link auto-shy")]
-        name_announcement = [a.text for a in soup.find_all("a",class_="bulletinLink bull-item__self-link auto-shy")]
+        name_announcement = [a.text for a in soup.find_all("a",
+                                                           class_="bulletinLink bull-item__self-link auto-shy")]
 
         cost = [div.next for div in soup.find_all("div",
                                                      class_="price-block__price")]
-        district = [div.text for div in soup.find_all("div",class_="bull-item__annotation-row")]
-        views = [span.text for span in soup.find_all("span",class_="views nano-eye-text")]
+        cost = [value.replace(' ', '')  for value in cost]
+
+        district = [div.text for div in soup.find_all("div",
+                                                      class_="bull-item__annotation-row")]
+        for value in district:
+            if value.split(',')[0] == '64':
+                area.append('64,' + value.split(',')[1])
+            else:
+                area.append(value.split(',')[0])
+            square.append(value.split(',')[-2] +','+ value.split(',')[-1][0])
+            author.append(value.split(',')[-3])
+
+        views = [span.text for span in soup.find_all("span", class_="views "
+                                                                    "nano-eye-text")]
+
+        df = pd.DataFrame({
+            "Название": name_announcement,
+            "Просмотры": views,
+            "ссылка": profile_links,
+
+        })
+
+
 
         pass
-
-
         # Извлечение информации из каждого профиля
         # for link in profile_links:
         #     url = "https://www.farpost.ru" + link
