@@ -107,6 +107,7 @@ def scrape_all_profiles(start_url):
     area =  []
     author = []
     square = []
+    is_check = []
     all_profiles = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
@@ -151,10 +152,14 @@ def scrape_all_profiles(start_url):
                                                           class_="bulletinLink bull-item__self-link auto-shy")]
         name_announcement = [a.text for a in soup.find_all("a",
                                                            class_="bulletinLink bull-item__self-link auto-shy")]
+        for value in name_announcement:
+            is_check.append('True'if value[0].isdigit() else 'False')
+
+
 
         cost = [div.next for div in soup.find_all("div",
                                                      class_="price-block__price")]
-        cost = [value.replace(' ', '')  for value in cost]
+        cost = [value.replace(' ', '') for value in cost]
 
         district = [div.text for div in soup.find_all("div",
                                                       class_="bull-item__annotation-row")]
