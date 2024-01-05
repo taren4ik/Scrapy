@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 import time
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 
 
 # Функция для извлечения информации из одного профиля
@@ -16,7 +18,7 @@ def extract_profile_info(profile_html):
         flat_data['area'] = None
         flat_data['count_rooms'] = None
         flat_data['price'] = None
-        return  flat_data
+        return flat_data
     # Извлечение ФИО
     # fio_element = soup.find("a", rel="bookmark")
     # profile_data["ФИО"] = fio_element.get_text().strip() if fio_element else ''
@@ -125,6 +127,17 @@ def scrape_all_profiles(start_url):
         # Извлечение всех ссылок на объявления
         profile_links = [a["href"] for a in soup.find_all("a",
                                                           class_="bulletinLink bull-item__self-link auto-shy")]
+        if not profile_links:
+            driver = webdriver.Chrome()
+            driver.get(current_url)
+            # Задержка для загрузки страницы и выполнения JavaScript
+            time.sleep(5)
+
+            # Находим и нажимаем кнопку "Продолжить"
+            send_button = driver.find_element_by_id("send-button")
+            send_button.click()
+            driver.quit()
+
 
         # Извлечение информации из каждого профиля
         for link in profile_links:

@@ -120,40 +120,47 @@ class RandomUserAgentMiddleware:
         user_agent = self.ua.random
         request.headers.setdefault('User-Agent', user_agent)
 
-class SeleniumMiddleware:
-    def __init__(self):
-        settings = get_project_settings()
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('--headless')  # Запустить Chrome в фоновом режиме
-        self.driver = webdriver.Chrome(executable_path=settings.get('D:\developer\Scrapy\chromedriver\chromedriver.exe'), options=chrome_options)
 
-    def process_request(self, request, spider):
-        self.driver.get(request.url)
-        time.sleep(5)  # Задержка для загрузки страницы и выполнения JavaScript
-
-        # Находим и нажимаем кнопку "Продолжить"
-        send_button = self.driver.find_element_by_id("send-button")
-        send_button.click()
-        body = self.driver.page_source
-        return HtmlResponse(self.driver.current_url, body=body, encoding='utf-8', request=request)
-
-    def __del__(self):
-        self.driver.quit()
+# class SeleniumMiddleware:
+#     def __init__(self):
+#         settings = get_project_settings()
+#         chrome_options = webdriver.ChromeOptions()
+#         chrome_options.add_argument('--headless')  # Запустить Chrome в фоновом режиме
+#         self.driver = webdriver.Chrome(executable_path=settings.get(
+#             r'D:\developer\Scrapy\chromedriver\chromedriver.exe'), options=chrome_options)
+#
+#     def process_request(self, request, spider):
+#         self.driver.get(request.url)
+#         time.sleep(5)  # Задержка для загрузки страницы и выполнения JavaScript
+#
+#         # Находим и нажимаем кнопку "Продолжить"
+#         send_button = self.driver.find_element_by_id("send-button")
+#         send_button.click()
+#         body = self.driver.page_source
+#         return HtmlResponse(self.driver.current_url, body=body, encoding='utf-8', request=request)
+#
+#     def __del__(self):
+#         self.driver.quit()
 
 class ProxyMiddleware(HttpProxyMiddleware):
     def process_request(self, request, spider):
         proxy_list = [
                 'http://95.167.42.44:8080',
-                'http://93.170.95.116:8080',
-                'http://86.102.7.172:8080',
-                'http://86.102.15.227:8080',
-                'http://86.102.12.118:8080',
-                'http://5.143.74.156:8080',
-                'http://5.143.97.56:8080',
-                'http://5.143.20.195:8080',
-                'http://77.35.152.255:8080',
-                'http://77.35.41.238:8080',
-                'http://77.35.226.140:8080'
+                'http://45.8.211.90:80',
+                'http://45.8.211.64:80',
+                'http://45.8.211.113:80',
+                'http://185.221.160.0:80',
+                'http://31.12.75.183:80',
+                'http://31.12.75.145:80',
+                'http://185.221.160.123:80',
+                'http://185.221.160.176:80',
+                'http://185.174.138.19:80',
+                'http://45.8.211.110:80',
+                'http://185.221.160.60:80',
+                'http://91.235.220.122:80',
+                'http://85.26.146.169:80',
+                'http://95.167.29.50:8080'
         ]
         # Выберите прокси случайным образом из списка
-        request.meta['proxy'] = proxy_list[random.randint(0, len(proxy_list) - 1)]
+        request.meta['proxy'] = proxy_list[random.randint(0,
+                                                          len(proxy_list) - 1)]
