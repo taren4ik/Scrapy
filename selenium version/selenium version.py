@@ -104,11 +104,12 @@ def scrape_all_profiles(start_url):
     Извлекает основную информацию на все объявления
     :return:
     """
-    area =  []
+    area = []
     author = []
     square = []
     is_check = []
     all_profiles = []
+    room = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(
@@ -143,18 +144,22 @@ def scrape_all_profiles(start_url):
     while current_url:
         driver = webdriver.Chrome(options=chrome_options)
         driver.get(current_url)
+        time.sleep(random.uniform(3, 6))
         response = driver.page_source
         #response = safe_request(current_url, headers)
         soup = BeautifulSoup(response, "html.parser")
-        time.sleep(1)
+
         # Извлечение всех ссылок на объявления
         profile_links = [a["href"] for a in soup.find_all("a",
                                                           class_="bulletinLink bull-item__self-link auto-shy")]
         name_announcement = [a.text for a in soup.find_all("a",
                                                            class_="bulletinLink bull-item__self-link auto-shy")]
         for value in name_announcement:
-            is_check.append('True'if value[0].isdigit() else 'False')
+            is_check.append('True' if value[0].isdigit() or value.startswith(
+                'Гостинка') else 'False')
 
+            room.append(value[0] if value[0].isdigit() or value.startswith(
+                'Гостинка') else 0)
 
 
         cost = [div.next for div in soup.find_all("div",
@@ -168,7 +173,7 @@ def scrape_all_profiles(start_url):
                 area.append('64,' + value.split(',')[1])
             else:
                 area.append(value.split(',')[0])
-            square.append(value.split(',')[-2] +','+ value.split(',')[-1][0])
+            square.append(value.split(',')[-2] + ','+ value.split(',')[-1][0])
             author.append(value.split(',')[-3])
 
         views = [span.text for span in soup.find_all("span", class_="views "
@@ -176,14 +181,25 @@ def scrape_all_profiles(start_url):
 
         df = pd.DataFrame({
             "Название": name_announcement,
+            "Район": 'None',
+            "Ссылка": profile_links,
             "Просмотры": views,
-            "ссылка": profile_links,
+            "Стоимость": 'None',
+            "Комнат": room,
+            "Формат": is_check
+
+
 
         })
+        for i, row in enumerate(np.where(df["Формат"] == 'True')[0].tolist()):
+            df.loc[row, "Стоимость"] = cost[i]
+            df.loc[row, "Район"] = district[i]
 
 
 
-        pass
+
+
+
         # Извлечение информации из каждого профиля
         # for link in profile_links:
         #     url = "https://www.farpost.ru" + link
@@ -203,7 +219,7 @@ def scrape_all_profiles(start_url):
 
         # Задержка 0.5 секунды перед следующим запросом
         time.sleep(2)
-        driver.quit()
+    driver.quit()
     return all_profiles
 
 
