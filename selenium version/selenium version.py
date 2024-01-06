@@ -142,6 +142,7 @@ def scrape_all_profiles(start_url):
     while current_url:
         if current_url == 'https://www.farpost.ru/vladivostok/realty/sell_flats/':
             driver = webdriver.Chrome(options=chrome_options)
+            driver.implicitly_wait(7)
             driver.get(current_url)
         else:
             driver.execute_script("window.open('', '_blank');")
@@ -158,8 +159,7 @@ def scrape_all_profiles(start_url):
         name_announcement = [a.text for a in soup.find_all("a",
                                                            class_="bulletinLink bull-item__self-link auto-shy")]
         for value in name_announcement:
-            is_check.append('True' if value[0].isdigit() or value.startswith(
-                'Гостинка') else 'False')
+            is_check.append('False' if ('ЖК' in value) else 'True')
 
             room.append(value[0] if value[0].isdigit() or value.startswith(
                 'Гостинка') else 0)
@@ -183,18 +183,20 @@ def scrape_all_profiles(start_url):
         views = [span.text for span in soup.find_all("span", class_="views nano-eye-text")]
 
         df = pd.DataFrame({
-            "Название": name_announcement,
-            "Район": 'None',
-            "Ссылка": profile_links,
-            "Просмотры": views,
-            "Стоимость": 'None',
-            "Комнат": room,
-            "Формат": is_check
+            'Название': name_announcement,
+            'Район': 'None',
+            'Ссылка': profile_links,
+            'Просмотры': views,
+            'Стоимость': 'None',
+            'Комнат': room,
+            'Формат': is_check,
+            'Площадь': 'None'
 
         })
-        for i, row in enumerate(np.where(df["Формат"] == 'True')[0].tolist()):
-            df.loc[row, "Стоимость"] = cost[i]
-            df.loc[row, "Район"] = district[i]
+        for i, row in enumerate(np.where(df['Формат'] == 'True')[0].tolist()):
+            df.loc[row, 'Стоимость'] = cost[i]
+            df.loc[row, 'Район'] = district[i]
+            df.loc[row, 'Площадь'] = square[i]
 
         write_profiles_to_csv(df)
         df = df[0:0]
@@ -206,11 +208,11 @@ def scrape_all_profiles(start_url):
         if page > 1:
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
-        page += 1
+        page += 7
         current_url = (
             f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={page}')
 
-        time.sleep(random.uniform(1, 5))
+        time.sleep(random.uniform(2, 5))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
     return True
