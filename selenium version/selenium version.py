@@ -80,23 +80,27 @@ from selenium.webdriver.common.keys import Keys
 #             time.sleep(7)
 
 
-def write_profiles_to_csv(profiles):
+def write_profiles_to_csv(df):
     """
     Запись информации в файл.
-    :param profiles:
-    :param filename:
+    :param df:
     :return:
     """
     filename = f"profiles_farpost_{datetime.date.today().__str__().replace('-','_')}.csv"
-    fieldnames = set()
-    for profile in profiles:
-        fieldnames.update(profile.keys())
-
-    with open(filename, 'a', newline='', encoding='utf-8') as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        for profile in profiles:
-            writer.writerow(profile)
+    df.to_csv(f'{filename}', mode='a',
+                   sep=';',
+                   header=True,
+                   index=False,
+                   encoding='utf-16')
+    # fieldnames = set()
+    # for profile in profiles:
+    #     fieldnames.update(profile.keys())
+    #
+    # with open(filename, 'a', newline='', encoding='utf-8') as file:
+    #     writer = csv.DictWriter(file, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #     for profile in profiles:
+    #         writer.writerow(profile)
 
 
 def scrape_all_profiles(start_url):
@@ -108,7 +112,6 @@ def scrape_all_profiles(start_url):
     author = []
     square = []
     is_check = []
-    all_profiles = []
     room = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
@@ -135,21 +138,21 @@ def scrape_all_profiles(start_url):
     ]
 
     chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
-
-    #Заголовки для имитации браузера user-agent
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    i = 1
+    page = 1
     while current_url:
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.get(current_url)
+        if current_url == 'https://www.farpost.ru/vladivostok/realty/sell_flats/':
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(current_url)
+        else:
+            driver.execute_script("window.open('', '_blank');")
+
+            # Переключение на новую вкладку (по индексу, где 1 - вторая вкладка)
+            driver.switch_to.window(driver.window_handles[1])
+            driver.get(current_url)
         time.sleep(random.uniform(3, 6))
         response = driver.page_source
-        #response = safe_request(current_url, headers)
-        soup = BeautifulSoup(response, "html.parser")
+        soup = BeautifulSoup(response, 'html.parser')
 
-        # Извлечение всех ссылок на объявления
         profile_links = [a["href"] for a in soup.find_all("a",
                                                           class_="bulletinLink bull-item__self-link auto-shy")]
         name_announcement = [a.text for a in soup.find_all("a",
@@ -160,7 +163,6 @@ def scrape_all_profiles(start_url):
 
             room.append(value[0] if value[0].isdigit() or value.startswith(
                 'Гостинка') else 0)
-
 
         cost = [div.next for div in soup.find_all("div",
                                                      class_="price-block__price")]
@@ -173,11 +175,12 @@ def scrape_all_profiles(start_url):
                 area.append('64,' + value.split(',')[1])
             else:
                 area.append(value.split(',')[0])
-            square.append(value.split(',')[-2] + ','+ value.split(',')[-1][0])
-            author.append(value.split(',')[-3])
+            square.append(value.split(',')[-2] + ',' + value.split(',')[-1][
+                0] if len(value.split(',')) > 2 else 0)
+            author.append(value.split(',')[1] if value.split(',')[1] else
+                           'None')
 
-        views = [span.text for span in soup.find_all("span", class_="views "
-                                                                    "nano-eye-text")]
+        views = [span.text for span in soup.find_all("span", class_="views nano-eye-text")]
 
         df = pd.DataFrame({
             "Название": name_announcement,
@@ -188,39 +191,29 @@ def scrape_all_profiles(start_url):
             "Комнат": room,
             "Формат": is_check
 
-
-
         })
         for i, row in enumerate(np.where(df["Формат"] == 'True')[0].tolist()):
             df.loc[row, "Стоимость"] = cost[i]
             df.loc[row, "Район"] = district[i]
 
-
-
-
-
-
-        # Извлечение информации из каждого профиля
-        # for link in profile_links:
-        #     url = "https://www.farpost.ru" + link
-        #     profile_response = safe_request(url, headers)
-        #     profile_info = extract_profile_info(profile_response.content)
-        #     all_profiles.append(profile_info)
-        #     time.sleep(1)
-
-        # Запись текущих результатов в файл CSV
-        write_profiles_to_csv(all_profiles)
-        i += 1  # счетчик страниц
-
+        write_profiles_to_csv(df)
+        df = df[0:0]
+        author = []
+        is_check = []
+        square = []
+        area = []
+        room = []
+        if page > 1:
+            driver.close()
+            driver.switch_to.window(driver.window_handles[0])
+        page += 1
         current_url = (
-            f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={i}')
-        #  next_page = soup.find("a", class_="next page-numbers")
-        #   current_url = next_page["href"] if next_page else None
+            f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={page}')
 
-        # Задержка 0.5 секунды перед следующим запросом
-        time.sleep(2)
+        time.sleep(random.uniform(1, 5))
+    driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    return all_profiles
+    return True
 
 
 # Начните с извлечения всех объявлений
