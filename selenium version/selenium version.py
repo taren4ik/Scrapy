@@ -154,15 +154,29 @@ def scrape_all_profiles(start_url):
         response = driver.page_source
         soup = BeautifulSoup(response, 'html.parser')
 
+        full_post_v1 = [div for div in soup.find_all("div",
+                                                   class_="descriptionCell bull-item-content__cell bull-item-content__description-cell")]
+
+        full_post_v2 = [div for div in soup.find_all("div",
+                                                     class_="bulletinBlock bull-item-content")]
+        full_post = full_post_v1 if full_post_v1 else full_post_v2
+
+        for post in full_post:
+            if post.find('div',
+                         class_='bull-item-content__price-info-container').text:
+                is_check.append('True')
+            else:
+                is_check.append('False')
+
         profile_links = [a["href"] for a in soup.find_all("a",
                                                           class_="bulletinLink bull-item__self-link auto-shy")]
         name_announcement = [a.text for a in soup.find_all("a",
                                                            class_="bulletinLink bull-item__self-link auto-shy")]
         for value in name_announcement:
-            is_check.append('False' if ('ЖК' in value) else 'True')
+            #is_check.append('False' if ('ЖК' in value) else 'True')
 
             room.append(value[0] if value[0].isdigit() or value.startswith(
-                'Гостинка') else 0)
+                'Гостинка') or value.startswith('Комната') else 0)
 
         cost = [div.next for div in soup.find_all("div",
                                                      class_="price-block__price")]
@@ -195,7 +209,7 @@ def scrape_all_profiles(start_url):
         })
         for i, row in enumerate(np.where(df['Формат'] == 'True')[0].tolist()):
             df.loc[row, 'Стоимость'] = cost[i]
-            df.loc[row, 'Район'] = district[i]
+            df.loc[row, 'Район'] = area[i]
             df.loc[row, 'Площадь'] = square[i]
 
         write_profiles_to_csv(df)
@@ -208,7 +222,7 @@ def scrape_all_profiles(start_url):
         if page > 1:
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
-        page += 7
+        page += 1
         current_url = (
             f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={page}')
 
