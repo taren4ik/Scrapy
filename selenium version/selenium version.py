@@ -1,12 +1,11 @@
-import random
-from bs4 import BeautifulSoup
-import csv
-
-import pandas as pd
-import numpy as np
-import time
 import datetime
+import random
+import time
+
+from bs4 import BeautifulSoup
+import pandas as pd
 from selenium import webdriver
+import numpy as np
 
 
 def write_profiles_to_csv(df):
@@ -37,17 +36,16 @@ def scrape_all_profiles(start_url):
     post_id = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument(
-        '--disable-blink-features=AutomationControlled')
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_argument('--disable-infobars')
     chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-browser-side-navigation')
     chrome_options.add_argument('--disable-gpu')
- #   chrome_options.add_argument('--allow-profiles-outside-user-dir')
- #   chrome_options.add_argument('--enable-profile-shortcut-manager')
-    chrome_options.add_argument(r'user-data-dir=D:\developer\scrapy')
-    chrome_options.add_argument('--profile-directory=Profile 1')
+    # chrome_options.add_argument('--allow-profiles-outside-user-dir')
+    # chrome_options.add_argument('--enable-profile-shortcut-manager')
+    # chrome_options.add_argument(r'user-data-dir=D:\developer\scrapy')
+    # chrome_options.add_argument('--profile-directory=Profile 1')
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Mozilla/5.0 (Linux; Android 9; SM-T385) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36',
@@ -63,10 +61,10 @@ def scrape_all_profiles(start_url):
         'Mozilla/5.0 (Linux; Android 9) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.136 Mobile Safari/537.36 DuckDuckGo/5',
     ]
 
-    chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
     page = 1
     while current_url:
-        if current_url == 'https://www.farpost.ru/vladivostok/realty/sell_flats/':
+        if page == 1 or page % 50 == 0:
+            chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
             driver = webdriver.Chrome(options=chrome_options)
         else:
             driver.execute_script("window.open('', '_blank');")
@@ -75,7 +73,7 @@ def scrape_all_profiles(start_url):
             driver.switch_to.window(driver.window_handles[1])
         driver.implicitly_wait(10)
         driver.get(current_url)
-        time.sleep(random.uniform(5, 10))
+        time.sleep(random.uniform(3, 9))
         response = driver.page_source
         soup = BeautifulSoup(response, 'html.parser')
 
@@ -153,10 +151,12 @@ def scrape_all_profiles(start_url):
         room = []
         views = []
         post_id = []
-        if page > 1:
+        if page > 1 and page % 50 != 0:
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
         page += 1
+        if page % 50 == 0:
+            driver.quit()
         current_url = (
             f'https://www.farpost.ru/vladivostok/realty/sell_flats?page={page}')
 
@@ -164,7 +164,6 @@ def scrape_all_profiles(start_url):
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
     return True
-
 
 
 all_profiles = scrape_all_profiles(
