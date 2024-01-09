@@ -79,7 +79,6 @@ def scrape_all_profiles(start_url):
     ]
 
     page = 1
-    start_time = time.no
     while current_url:
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
