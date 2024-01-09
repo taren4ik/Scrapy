@@ -8,6 +8,22 @@ from selenium import webdriver
 import numpy as np
 
 
+def timer_wrapper(func):
+    """
+    Декоратор-таймер.
+    :param func:
+    :return:
+    """
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        difference_time = end_time - start_time
+        print(f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
+        return result
+    return wrapper
+
+
 def write_profiles_to_csv(df):
     """
     Запись информации в файл.
@@ -22,6 +38,7 @@ def write_profiles_to_csv(df):
                    encoding='utf-16')
 
 
+@timer_wrapper
 def scrape_all_profiles(start_url):
     """
     Извлекает основную информацию на все объявления
@@ -62,6 +79,7 @@ def scrape_all_profiles(start_url):
     ]
 
     page = 1
+    start_time = time.no
     while current_url:
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
@@ -85,7 +103,7 @@ def scrape_all_profiles(start_url):
         full_post = full_post_v1 if full_post_v1 else full_post_v2
 
         for post in full_post:
-            post_id.append(post.find('a')['name'])
+            post_id.append(post.find('a')['name'] if post.find('a')['name'] else post.parent.a['name'])
             if post.find('div',
                          class_='bull-item-content__price-info-container').text:
                 is_check.append('True')
