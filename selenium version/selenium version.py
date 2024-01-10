@@ -1,11 +1,17 @@
+import os
 import datetime
 import random
 import time
 
+import psycopg2
 from bs4 import BeautifulSoup
 import pandas as pd
 from selenium import webdriver
 import numpy as np
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 def timer_wrapper(func):
@@ -22,6 +28,32 @@ def timer_wrapper(func):
         print(f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
         return result
     return wrapper
+
+
+def write_profiles_db(df):
+    conn = psycopg2.connect(
+        host=os.getenv('DB_HOST'),
+        database=os.getenv('DB_NAME'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PORT')
+    )
+    cur = conn.cursor()
+
+    cur.execute('''
+        CREATE TABLE farpost.farpost (
+            id varchar NOT NULL,
+            "text" varchar(512) NULL,
+            area varchar(128) NULL,
+            link varchar(128) NULL,
+            "view" varchar(16) NULL,
+            "cost" varchar(20) NULL,
+            room varchar(11) NULL,
+            is_check varchar NULL,
+            square varchar(20) NULL,
+            author varchar(20) NULL,
+            "date" timestamp NULL DEFAULT now(),
+            CONSTRAINT farpost_pkey PRIMARY KEY (id)'''
+)
 
 
 def write_profiles_to_csv(df):
@@ -80,6 +112,8 @@ def scrape_all_profiles(start_url):
 
     page = 1
     while current_url:
+        if page == 181:
+            return True
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(f'user-agent={random.choice(user_agents)}')
             driver = webdriver.Chrome(options=chrome_options)
@@ -102,7 +136,13 @@ def scrape_all_profiles(start_url):
         full_post = full_post_v1 if full_post_v1 else full_post_v2
 
         for post in full_post:
-            post_id.append(post.find('a')['name'] if post.find('a')['name'] else post.parent.a['name'])
+            #post_id.append(post.find('a')['name'] if post.find('a')['name']
+            # else post.parent.a['name'])
+            if post.find('a')['name']:
+                post_id.append(post.find('a')['name'])
+            else:
+                post.parent.a['name']
+
             if post.find('div',
                          class_='bull-item-content__price-info-container').text:
                 is_check.append('True')
