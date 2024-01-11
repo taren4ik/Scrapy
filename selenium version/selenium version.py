@@ -4,6 +4,7 @@ import random
 import time
 
 import psycopg2
+from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 import pandas as pd
 from selenium import webdriver
@@ -31,13 +32,13 @@ def timer_wrapper(func):
 
 
 def write_profiles_db(df):
-    conn = psycopg2.connect(
+    connection = psycopg2.connect(
         host=os.getenv('DB_HOST'),
         database=os.getenv('DB_NAME'),
         user=os.getenv('DB_USER'),
         password=os.getenv('DB_PORT')
     )
-    cur = conn.cursor()
+    cur = connection.cursor()
 
     cur.execute('''
         CREATE TABLE farpost.farpost (
