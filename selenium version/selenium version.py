@@ -21,7 +21,6 @@ def timer_wrapper(func):
     :param func:
     :return:
     """
-
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -78,6 +77,13 @@ def write_profiles_to_csv(df):
     )
 
 
+def secure_request():
+    """
+
+    :return:
+    """
+
+
 @timer_wrapper
 def scrape_all_profiles(start_url):
     """
@@ -125,6 +131,14 @@ def scrape_all_profiles(start_url):
         time.sleep(random.uniform(3, 9))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
+
+        if soup.find_all("div", id="map", ): #проверка на карту
+            checkbox = driver.find_element_by_xpath("//*[@id='filtersForm']/table/tbody/tr[2]/td/div/div/div[3]/div/label/input")
+            checkbox.click()
+            time.sleep(random.uniform(3, 9))
+            response = driver.page_source
+            soup = BeautifulSoup(response, "html.parser")
+
 
         full_post_v1 = [
             div
@@ -270,5 +284,7 @@ def scrape_all_profiles(start_url):
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/"
+   # "https://www.farpost.ru/vladivostok/realty/sell_flats/?page=50#center
+    # =43.136198454539226%2C131.91931294486963&zoom=10.807010681003488"
+     "https://www.farpost.ru/vladivostok/realty/sell_flats/"
 )
