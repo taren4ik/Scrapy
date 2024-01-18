@@ -112,7 +112,7 @@ def scrape_all_profiles(start_url):
     # chrome_options.add_argument('--profile-directory=Profile 1')
     user_agents = USER_AGENTS
 
-    page = 1
+    page = 150
     while current_url:
         posts = []
         if page == 181:
@@ -133,7 +133,7 @@ def scrape_all_profiles(start_url):
         soup = BeautifulSoup(response, "html.parser")
 
         if soup.find_all("div", id="map", ): #проверка на карту
-            checkbox = driver.find_element_by_xpath("//*[@id='filtersForm']/table/tbody/tr[2]/td/div/div/div[3]/div/label/input")
+            checkbox = soup.find_all("input", type = "checkbox")[-1]
             checkbox.click()
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
