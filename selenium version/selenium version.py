@@ -112,7 +112,7 @@ def scrape_all_profiles(start_url):
     # chrome_options.add_argument('--profile-directory=Profile 1')
     user_agents = USER_AGENTS
 
-    page = 150
+    page = 1
     while current_url:
         posts = []
         if page == 181:
@@ -138,7 +138,6 @@ def scrape_all_profiles(start_url):
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
-
 
         full_post_v1 = [
             div
@@ -250,6 +249,7 @@ def scrape_all_profiles(start_url):
                 "Формат": is_check,
                 "Площадь": "None",
                 "Автор": "None",
+                'Дата': datetime.datetime.now().__str__(),
             }
         )
         for i, row in enumerate(np.where(df["Формат"] == "True")[0].tolist()):
