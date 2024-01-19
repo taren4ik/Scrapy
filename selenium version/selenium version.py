@@ -14,6 +14,17 @@ from user_agents import USER_AGENTS
 
 load_dotenv()
 
+host = os.getenv("DB_HOST")
+database = os.getenv("DB_NAME")
+schema_name = os.getenv("DB_SCHEMA")
+table_name = os.getenv("DB_TABLE_NAME")
+user = os.getenv("DB_USER")
+password = os.getenv("DB_PASS")
+database_uri = (
+    f"postgresql://{user}:{password}@{host}/{database}")
+
+engine = create_engine(database_uri)
+
 
 def timer_wrapper(func):
     """
@@ -21,47 +32,17 @@ def timer_wrapper(func):
     :param func:
     :return:
     """
+
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
         difference_time = end_time - start_time
-        print(f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
+        print(
+            f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
         return result
 
     return wrapper
-
-
-def write_profiles_db(df):
-    """
-    Запись данных в конечную структуру.
-    :param df:
-    :return:
-    """
-    connection = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PORT"),
-    )
-    cur = connection.cursor()
-
-    cur.execute(
-        """
-        CREATE TABLE farpost.farpost (
-            id varchar NOT NULL,
-            "text" varchar(512) NULL,
-            area varchar(128) NULL,
-            link varchar(128) NULL,
-            "view" varchar(16) NULL,
-            "cost" varchar(20) NULL,
-            room varchar(11) NULL,
-            is_check varchar NULL,
-            square varchar(20) NULL,
-            author varchar(20) NULL,
-            "date" timestamp NULL DEFAULT now(),
-            CONSTRAINT farpost_pkey PRIMARY KEY (id)"""
-    )
 
 
 def write_profiles_to_csv(df):
@@ -73,15 +54,9 @@ def write_profiles_to_csv(df):
     path = datetime.date.today().__str__().replace("-", "_")
     filename = f"profiles_farpost_{path}.csv"
     df.to_csv(
-        f"{filename}", mode="a", sep=";", header=False, index=False, encoding="utf-16"
+        f"{filename}", mode="a", sep=";", header=False, index=False,
+        encoding="utf-16"
     )
-
-
-def secure_request():
-    """
-
-    :return:
-    """
 
 
 @timer_wrapper
@@ -124,7 +99,7 @@ def scrape_all_profiles(start_url):
             driver = webdriver.Chrome(options=chrome_options)
         else:
             driver.execute_script("window.open('', '_blank');")
-        # Переключение на новую вкладку (по индексу, где 1 - вторая вкладка)
+            # Переключение на новую вкладку (по индексу, где 1 - вторая вкладка)
             driver.switch_to.window(driver.window_handles[1])
         driver.implicitly_wait(10)
         driver.get(current_url)
@@ -132,8 +107,8 @@ def scrape_all_profiles(start_url):
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
 
-        if soup.find_all("div", id="map", ): #проверка на карту
-            checkbox = soup.find_all("input", type = "checkbox")[-1]
+        if soup.find_all("div", id="map", ):  # проверка на карту
+            checkbox = soup.find_all("input", type="checkbox")[-1]
             checkbox.click()
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
@@ -211,8 +186,8 @@ def scrape_all_profiles(start_url):
             room.append(
                 value[0]
                 if value[0].isdigit()
-                or value.startswith("Гостинка")
-                or value.startswith("Комната")
+                   or value.startswith("Гостинка")
+                   or value.startswith("Комната")
                 else 0
             )
 
@@ -259,6 +234,13 @@ def scrape_all_profiles(start_url):
             df.loc[row, "Автор"] = author[i]
 
         write_profiles_to_csv(df)
+        df.to_sql(
+            table_name,
+            engine,
+            schema=schema_name,
+            if_exists='replace',
+            index=False
+        )
         df = df[0:0]
         author = []
         is_check = []
@@ -284,7 +266,7 @@ def scrape_all_profiles(start_url):
 
 
 all_profiles = scrape_all_profiles(
-   # "https://www.farpost.ru/vladivostok/realty/sell_flats/?page=50#center
+    # "https://www.farpost.ru/vladivostok/realty/sell_flats/?page=50#center
     # =43.136198454539226%2C131.91931294486963&zoom=10.807010681003488"
-     "https://www.farpost.ru/vladivostok/realty/sell_flats/"
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/"
 )
