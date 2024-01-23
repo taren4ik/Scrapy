@@ -9,6 +9,7 @@ import psycopg2
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from sqlalchemy import create_engine
 from user_agents import USER_AGENTS
 
@@ -108,8 +109,10 @@ def scrape_all_profiles(start_url):
         soup = BeautifulSoup(response, "html.parser")
 
         if soup.find_all("div", id="map", ):  # проверка на карту
-            checkbox = soup.find_all("input", type="checkbox")[-1]
-            checkbox.click()
+            checkbox = driver.find_element(
+                By.CSS_SELECTOR, '.bzr-toggle input[type="checkbox"]')
+            driver.execute_script("arguments[0].click();", checkbox)
+
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
@@ -214,31 +217,31 @@ def scrape_all_profiles(start_url):
 
         df = pd.DataFrame(
             {
-                "Id": post_id,
-                "Название": name_announcement,
-                "Район": "None",
-                "Ссылка": profile_links,
-                "Просмотры": views,
-                "Стоимость": "None",
-                "Комнат": room,
-                "Формат": is_check,
-                "Площадь": "None",
-                "Автор": "None",
-                'Дата': datetime.datetime.now().__str__(),
+                "id": post_id,
+                "text": name_announcement,
+                "area": "None",
+                "link": profile_links,
+                "view": views,
+                "cost": "None",
+                "room": room,
+                "is_check": is_check,
+                "square": "None",
+                "author": "None",
+                "date": datetime.datetime.now().__str__(),
             }
         )
-        for i, row in enumerate(np.where(df["Формат"] == "True")[0].tolist()):
-            df.loc[row, "Стоимость"] = cost[i]
-            df.loc[row, "Район"] = area[i]
-            df.loc[row, "Площадь"] = square[i]
-            df.loc[row, "Автор"] = author[i]
+        for i, row in enumerate(np.where(df["is_check"] == "True")[0].tolist()):
+            df.loc[row, "cost"] = cost[i]
+            df.loc[row, "area"] = area[i]
+            df.loc[row, "square"] = square[i]
+            df.loc[row, "author"] = author[i]
 
         write_profiles_to_csv(df)
         df.to_sql(
             table_name,
             engine,
             schema=schema_name,
-            if_exists='replace',
+            if_exists='append',
             index=False
         )
         df = df[0:0]
@@ -266,7 +269,5 @@ def scrape_all_profiles(start_url):
 
 
 all_profiles = scrape_all_profiles(
-    # "https://www.farpost.ru/vladivostok/realty/sell_flats/?page=50#center
-    # =43.136198454539226%2C131.91931294486963&zoom=10.807010681003488"
     "https://www.farpost.ru/vladivostok/realty/sell_flats/"
 )
