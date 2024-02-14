@@ -61,7 +61,7 @@ def write_profiles_to_csv(df):
 
 
 @timer_wrapper
-def scrape_all_profiles(start_url):
+def scrape_all_profiles(start_url, page):
     """
     Извлекает основную информацию на все объявления
     :return:
@@ -88,7 +88,7 @@ def scrape_all_profiles(start_url):
     # chrome_options.add_argument('--profile-directory=Profile 1')
     user_agents = USER_AGENTS
 
-    page = 1
+#    page = 1
     while current_url:
         posts = []
         if page == 181:
@@ -150,6 +150,14 @@ def scrape_all_profiles(start_url):
         posts.append(full_post_v4)
 
         full_post = [sublist for sublist in posts if len(sublist) > 0]
+
+        if full_post == 0:
+            time.sleep(200)
+            scrape_all_profiles(
+                "https://www.farpost.ru/vladivostok/realty/sell_flats/",
+                page=page
+            )
+
 
         for post in full_post[0]:
             # post_id.append(post.find('a')['name'] if post.find('a')['name']
@@ -237,13 +245,13 @@ def scrape_all_profiles(start_url):
             df.loc[row, "author"] = author[i]
 
         write_profiles_to_csv(df)
-        df.to_sql(
-            table_name,
-            engine,
-            schema=schema_name,
-            if_exists='append',
-            index=False
-        )
+        # df.to_sql(
+        #     table_name,
+        #     engine,
+        #     schema=schema_name,
+        #     if_exists='append',
+        #     index=False
+        # )
         df = df[0:0]
         author = []
         is_check = []
@@ -262,12 +270,12 @@ def scrape_all_profiles(start_url):
             f"https://www.farpost.ru/vladivostok/realty/sell_flats?page={page}"
         )
 
-        time.sleep(random.uniform(2, 7))
+        time.sleep(random.uniform(3, 9))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
     return True
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/"
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page= 50
 )
