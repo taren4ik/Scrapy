@@ -277,5 +277,5 @@ def scrape_all_profiles(start_url, page):
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page= 50
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=50
 )
