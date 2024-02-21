@@ -1,49 +1,31 @@
 import datetime
-import os
 import random
 import time
 
 import numpy as np
-import pandas as pd
-import psycopg2
-from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from sqlalchemy import create_engine
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import pandas as pd
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+from airflow.models import Variable
+
 from user_agents import USER_AGENTS
 
 load_dotenv()
 
-host = os.getenv("DB_HOST")
-database = os.getenv("DB_NAME")
-schema_name = os.getenv("DB_SCHEMA")
-table_name = os.getenv("DB_TABLE_NAME")
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASS")
-database_uri = (
-    f"postgresql://{user}:{password}@{host}/{database}")
+user_agents = USER_AGENTS
 
-engine = create_engine(database_uri)
-
-
-def timer_wrapper(func):
-    """
-    Декоратор-таймер.
-    :param func:
-    :return:
-    """
-
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        difference_time = end_time - start_time
-        print(
-            f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
-        return result
-
-    return wrapper
+args = {
+    'owner': 'dimon',
+    'provide_context': True
+}
 
 
 def write_profiles_to_csv(df):
@@ -60,10 +42,10 @@ def write_profiles_to_csv(df):
     )
 
 
-@timer_wrapper
 def scrape_all_profiles(start_url, page):
     """
-    Извлекает основную информацию на все объявления
+    Запрашивает данные с API
+    :param kwargs:
     :return:
     """
     area = []
@@ -86,7 +68,6 @@ def scrape_all_profiles(start_url, page):
     # chrome_options.add_argument('--enable-profile-shortcut-manager')
     # chrome_options.add_argument(r'user-data-dir=D:\developer\scrapy')
     # chrome_options.add_argument('--profile-directory=Profile 1')
-    user_agents = USER_AGENTS
 
     while current_url:
         posts = []
@@ -99,7 +80,7 @@ def scrape_all_profiles(start_url, page):
             driver = webdriver.Chrome(options=chrome_options)
         else:
             driver.execute_script("window.open('', '_blank');")
-            # Переключение на новую вкладку (где 1 - вторая вкладка)
+            # Переключение на новую вкладку (по индексу, где 1 - вторая вкладка)
             driver.switch_to.window(driver.window_handles[1])
         driver.implicitly_wait(10)
         driver.get(current_url)
@@ -152,7 +133,7 @@ def scrape_all_profiles(start_url, page):
 
         if full_post == 0:
             time.sleep(200)
-            scrape_all_profiles(
+            extract_data(
                 "https://www.farpost.ru/vladivostok/realty/sell_flats/",
                 page=page
             )
@@ -236,7 +217,8 @@ def scrape_all_profiles(start_url, page):
                 "date": datetime.datetime.now().__str__(),
             }
         )
-        for i, row in enumerate(np.where(df["is_check"] == "True")[0].tolist()):
+        for i, row in enumerate(
+                np.where(df["is_check"] == "True")[0].tolist()):
             df.loc[row, "cost"] = cost[i]
             df.loc[row, "area"] = area[i]
             df.loc[row, "square"] = square[i]
@@ -274,6 +256,27 @@ def scrape_all_profiles(start_url, page):
     return True
 
 
-all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page = 1
-)
+#  ti.xcom_push(key='farpost_data', value=json_data)
+
+
+with DAG('farpost_dag', description='select and transform data',
+         schedule='*/1 * * * *', catchup=False,
+         start_date=datetime.datetime(2024, 11, 2),
+         default_args=args, tags=['farpost', 'etl']) as dag:
+    extract_data = PythonOperator(task_id='extract_data',
+                                  python_callable=scrape_all_profiles,
+                                  op_kwargs={'start_url':
+                                                 'https://www.farpost.ru/vladivostok/realty/sell_flats/',
+                                             'page': 1})
+
+    # transform_data = PythonOperator(task_id='transform_data',
+    #                                  python_callable=write_profiles_to_csv)
+
+    # all_profiles = scrape_all_profiles(
+    #     "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=1
+    # )
+
+    extract_data
+
+if __name__ == "__main__":
+    dag.test()
