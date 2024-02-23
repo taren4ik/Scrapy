@@ -42,7 +42,7 @@ def write_profiles_to_csv(df):
     )
 
 
-def scrape_all_profiles(start_url, page):
+def scrape_all_profiles(**kwargs):
     """
     Запрашивает данные с API
     :param kwargs:
@@ -55,7 +55,8 @@ def scrape_all_profiles(start_url, page):
     room = []
     views = []
     post_id = []
-    current_url = start_url
+    current_url = kwargs['start_url']
+    page = kwargs['page']
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(
         "--disable-blink-features=AutomationControlled")
@@ -261,13 +262,15 @@ def scrape_all_profiles(start_url, page):
 
 with DAG('farpost_dag', description='select and transform data',
          schedule='*/1 * * * *', catchup=False,
-         start_date=datetime.datetime(2024, 11, 2),
+         start_date=datetime.datetime(2024, 2, 2),
          default_args=args, tags=['farpost', 'etl']) as dag:
     extract_data = PythonOperator(task_id='extract_data',
                                   python_callable=scrape_all_profiles,
                                   op_kwargs={'start_url':
                                                  'https://www.farpost.ru/vladivostok/realty/sell_flats/',
-                                             'page': 1})
+                                             'page': 1}
+
+                                  )
 
     # transform_data = PythonOperator(task_id='transform_data',
     #                                  python_callable=write_profiles_to_csv)
