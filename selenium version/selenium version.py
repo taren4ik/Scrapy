@@ -161,9 +161,11 @@ def scrape_all_profiles(start_url, page):
             # post_id.append(post.find('a')['name'] if post.find('a')['name']
             # else post.parent.a['name'])
             if post.find("a")["name"]:
-                post_id.append(post.find("a")["name"])
+                post_id.append(post.find("a")["name"] if post.find("a")[
+                    "name"][0] != '-' else post.find("a")["name"][1:])
             else:
-                post_id.append(post.parent.a["name"])
+                post_id.append(post.parent.a["name"] if  post.parent.a[
+                    "name"][0] != '-' else post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
                 is_check.append("True")
