@@ -133,8 +133,7 @@ def scrape_all_profiles(start_url, page):
         ]
         posts.append(full_post_v2)
         full_post_v3 = [
-            div
-            for div in soup.find_all(
+            div for div in soup.find_all(
                 "div", class_="bull-item bull-item_block bull-item_block-js"
             )
         ]
@@ -277,5 +276,5 @@ def scrape_all_profiles(start_url, page):
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page = 1
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=1
 )
