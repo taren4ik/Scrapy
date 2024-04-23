@@ -147,7 +147,14 @@ def scrape_all_profiles(start_url, page):
         ]
         posts.append(full_post_v4)
 
-        full_post = [sublist for sublist in posts if len(sublist) > 0]
+        full_post_v5 = [
+            div for div in soup.find_all(
+                "td",
+                class_="bull-list-item-js -exact content"
+            )
+        ]
+        posts.append(full_post_v5)
+        full_post = [sublist for sublist in posts if len(sublist) > 0][-1]
 
         if full_post == 0:
             time.sleep(200)
