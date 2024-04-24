@@ -154,7 +154,10 @@ def scrape_all_profiles(start_url, page):
             )
         ]
         posts.append(full_post_v5)
-        full_post = [sublist for sublist in posts if len(sublist) > 0][-1]
+
+        post_prep = [sublist for sublist in posts if len(sublist) > 0]
+        if len(post_prep) > 1:
+            full_post = max(post_prep, key=len)
 
         if full_post == 0:
             time.sleep(200)
@@ -170,7 +173,7 @@ def scrape_all_profiles(start_url, page):
                 post_id.append(post.find("a")["name"] if post.find("a")[
                     "name"][0] != '-' else post.find("a")["name"][1:])
             else:
-                post_id.append(post.parent.a["name"] if  post.parent.a[
+                post_id.append(post.parent.a["name"] if post.parent.a[
                     "name"][0] != '-' else post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
