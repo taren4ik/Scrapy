@@ -106,6 +106,8 @@ def scrape_all_profiles(start_url, page):
         time.sleep(random.uniform(3, 8))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
+        print(page)
+
 
         if soup.find_all("div", id="map", ):  # проверка на карту
             checkbox = driver.find_element(
@@ -132,12 +134,12 @@ def scrape_all_profiles(start_url, page):
             )
         ]
         posts.append(full_post_v2)
-        full_post_v3 = [
-            div for div in soup.find_all(
-                "div", class_="bull-item bull-item_block bull-item_block-js"
-            )
-        ]
-        posts.append(full_post_v3)
+        # full_post_v3 = [
+        #     div for div in soup.find_all(
+        #         "div", class_="bull-item bull-item_block bull-item_block-js"
+        #     )
+        # ]
+        # posts.append(full_post_v3)
 
         full_post_v4 = [
             div for div in soup.find_all(
@@ -148,16 +150,16 @@ def scrape_all_profiles(start_url, page):
         posts.append(full_post_v4)
 
         full_post_v5 = [
-            div for div in soup.find_all(
-                "td",
-                class_="bull-list-item-js -exact content"
-            )
-        ]
+            td for td in soup.find_all(
+                "td", class_="bull-list-item-js -exact content"
+            )]
         posts.append(full_post_v5)
 
         post_prep = [sublist for sublist in posts if len(sublist) > 0]
         if len(post_prep) > 1:
             full_post = max(post_prep, key=len)
+        else:
+            full_post = post_prep
 
         if full_post == 0:
             time.sleep(200)
@@ -169,6 +171,9 @@ def scrape_all_profiles(start_url, page):
         for post in full_post[0]:
             # post_id.append(post.find('a')['name'] if post.find('a')['name']
             # else post.parent.a['name'])
+            # пропуск скрытых объявлений
+
+
             if post.find("a")["name"]:
                 post_id.append(post.find("a")["name"] if post.find("a")[
                     "name"][0] != '-' else post.find("a")["name"][1:])
@@ -231,7 +236,8 @@ def scrape_all_profiles(start_url, page):
                 if len(value.split(",")) > 2
                 else 0
             )
-
+        print(len(post_id), len(name_announcement), len(profile_links),
+              len(profile_links), len(room), len(is_check))
         df = pd.DataFrame(
             {
                 "id": post_id,
@@ -286,5 +292,5 @@ def scrape_all_profiles(start_url, page):
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=1
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=50
 )
