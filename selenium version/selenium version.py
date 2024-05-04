@@ -5,7 +5,6 @@ import time
 
 import numpy as np
 import pandas as pd
-import psycopg2
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -42,7 +41,6 @@ def timer_wrapper(func):
         print(
             f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
         return result
-
     return wrapper
 
 
@@ -58,6 +56,21 @@ def write_profiles_to_csv(df):
         f"{filename}", mode="a", sep=";", header=False, index=False,
         encoding="utf-16"
     )
+
+
+def extract_post(soup, type_element, class_name):
+    """
+    Extract all posts from page.
+    :return: posts
+    """
+    result = [
+        type_element
+        for type_element in soup.find_all(
+            type_element,
+            class_=class_name,
+        )
+    ]
+    return result
 
 
 @timer_wrapper
@@ -108,7 +121,6 @@ def scrape_all_profiles(start_url, page):
         soup = BeautifulSoup(response, "html.parser")
         print(page)
 
-
         if soup.find_all("div", id="map", ):  # проверка на карту
             checkbox = driver.find_element(
                 By.CSS_SELECTOR, '.bzr-toggle input[type="checkbox"]')
@@ -118,13 +130,20 @@ def scrape_all_profiles(start_url, page):
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
 
-        full_post_v1 = [
-            div
-            for div in soup.find_all(
-                "div",
-                class_="descriptionCell bull-item-content__cell bull-item-content__description-cell",
-            )
-        ]
+        # full_post_v1 = [
+        #     div
+        #     for div in soup.find_all(
+        #         "div",
+        #         class_="descriptionCell bull-item-content__cell bull-item-content__description-cell",
+        #     )
+        # ]
+
+        full_post_v1 = extract_post(
+            soup,
+            "div",
+            "descriptionCell bull-item-content__cell bull-item-content__description-cell"
+        )
+
         posts.append(full_post_v1)
         full_post_v2 = [
             div
@@ -173,13 +192,16 @@ def scrape_all_profiles(start_url, page):
             # else post.parent.a['name'])
             # пропуск скрытых объявлений
 
-
             if post.find("a")["name"]:
                 post_id.append(post.find("a")["name"] if post.find("a")[
-                    "name"][0] != '-' else post.find("a")["name"][1:])
+                                                             "name"][
+                                                             0] != '-' else
+                               post.find("a")["name"][1:])
             else:
                 post_id.append(post.parent.a["name"] if post.parent.a[
-                    "name"][0] != '-' else post.parent.a["name"][1:])
+                                                            "name"][
+                                                            0] != '-' else
+                               post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
                 is_check.append("True")
@@ -210,9 +232,8 @@ def scrape_all_profiles(start_url, page):
         for value in name_announcement:
             room.append(
                 value[0]
-                if value[0].isdigit()
-                   or value.startswith("Гостинка")
-                   or value.startswith("Комната")
+                if value[0].isdigit() or value.startswith(
+                    "Гостинка") or value.startswith("Комната")
                 else 0
             )
 
@@ -253,7 +274,8 @@ def scrape_all_profiles(start_url, page):
                 "date": datetime.datetime.now().__str__(),
             }
         )
-        for i, row in enumerate(np.where(df["is_check"] == "True")[0].tolist()):
+        for i, row in enumerate(
+                np.where(df["is_check"] == "True")[0].tolist()):
             df.loc[row, "cost"] = cost[i]
             df.loc[row, "area"] = area[i]
             df.loc[row, "square"] = square[i]
@@ -292,5 +314,5 @@ def scrape_all_profiles(start_url, page):
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=50
+    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=1
 )
