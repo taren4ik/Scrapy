@@ -137,7 +137,6 @@ def scrape_all_profiles(start_url, page):
         #         class_="descriptionCell bull-item-content__cell bull-item-content__description-cell",
         #     )
         # ]
-
         full_post_v1 = extract_post(
             soup,
             "div",
@@ -188,10 +187,6 @@ def scrape_all_profiles(start_url, page):
             )
 
         for post in full_post[0]:
-            # post_id.append(post.find('a')['name'] if post.find('a')['name']
-            # else post.parent.a['name'])
-            # пропуск скрытых объявлений
-
             if post.find("a")["name"]:
                 post_id.append(post.find("a")["name"] if post.find("a")[
                                                              "name"][
