@@ -133,59 +133,13 @@ def scrape_all_profiles(start_url, page):
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
 
-        # full_post_v1 = [
-        #     div
-        #     for div in soup.find_all(
-        #         "div",
-        #         class_="descriptionCell bull-item-content__cell bull-item-content__description-cell",
-        #     )
-        # ]
-        # full_post_v1 = extract_post(
-        #     soup,
-        #     "div",
-        #     "descriptionCell bull-item-content__cell bull-item-content__description-cell"
-        # )
-        #
-        # posts.append(full_post_v1)
-        # full_post_v2 = extract_post(
-        #     soup,
-        #     "div",
-        #     "bulletinBlock bull-item-content"
-        # )
-        # full_post_v2 = [
-        #     div
-        #     for div in soup.find_all(
-        #         "div",
-        #         class_="bulletinBlock bull-item-content"
-        #     )
-        # ]
-        # posts.append(full_post_v2)
-        # full_post_v3 = [
-        #     div for div in soup.find_all(
-        #         "div", class_="bull-item bull-item_block bull-item_block-js"
-        #     )
-        # ]
-        # posts.append(full_post_v3)
-
-        # full_post_v4 = [
-        #     div for div in soup.find_all(
-        #         "tr",
-        #         class_="bull-list-item-js -exact"
-        #     )
-        # ]
-        # posts.append(full_post_v4)
-        #
-        # full_post_v5 = [
-        #     td for td in soup.find_all(
-        #         "td", class_="bull-list-item-js -exact content"
-        #     )]
-        # posts.append(full_post_v5)
-
         dict_class = {
             "bull-list-item-js -exact content": "div",
+            "bull-list-item-js -exact content": "td",
             "bull-list-item-js -exact": "tr",
             "bulletinBlock bull-item-content": "div",
-            "descriptionCell bull-item-content__cell bull-item-content__description-cell": "div"
+            "descriptionCell bull-item-content__cell "
+            "bull-item-content__description-cell": "div",
         }
 
         posts = extract_post(soup, **dict_class)
