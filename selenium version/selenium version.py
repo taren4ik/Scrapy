@@ -122,7 +122,7 @@ def scrape_all_profiles(start_url, page):
         time.sleep(random.uniform(3, 8))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
-        print(page)
+        print(f'Страница: {page}')
 
         if soup.find_all("div", id="map", ):  # проверка на карту
             checkbox = driver.find_element(
@@ -180,8 +180,6 @@ def scrape_all_profiles(start_url, page):
                 )
             else:
                 views.append("0")
-        # views = [div for div in soup.find_all("span", class_="views
-        # nano-eye-text")]
 
         profile_links = [
             a["href"]
