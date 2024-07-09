@@ -216,11 +216,16 @@ def scrape_all_profiles(start_url, page):
             else:
                 area.append(value.split(",")[0])
                 author.append(value.split(",")[1])
-            square.append(
-                value.split(",")[-2] + "," + value.split(",")[-1][0]
-                if len(value.split(",")) > 2
-                else 0
-            )
+
+            if value.split()[-1] == 'этаж':
+                square.append(value.split()[-5])
+            else:
+                square.append(
+                    value.split(",")[-2] + "," + value.split(",")[-1][0]
+
+                    if len(value.split(",")) > 2
+                    else 0
+                )
         print(len(post_id), len(name_announcement), len(profile_links),
               len(profile_links), len(room), len(is_check))
         df = pd.DataFrame(
