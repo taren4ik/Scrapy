@@ -41,19 +41,20 @@ def timer_wrapper(func):
         print(
             f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
         return result
+
     return wrapper
 
 
-def write_profiles_to_csv(df):
+def write_profiles_to_csv(df, flag=False):
     """
     Запись информации в файл из DataFrame.
-    :param df:
+    :param df, flag:
     :return:
     """
     path = datetime.date.today().__str__().replace("-", "_")
     filename = f"profiles_farpost_{path}.csv"
     df.to_csv(
-        f"{filename}", mode="a", sep=";", header=False, index=False,
+        f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
     )
 
@@ -232,8 +233,9 @@ def scrape_all_profiles(start_url, page):
                     if len(value.split(",")) > 2
                     else 0
                 )
-        print(len(post_id), len(name_announcement), len(profile_links),
-              len(profile_links), len(room), len(is_check))
+        print(f"Пост {len(post_id)}  {len(name_announcement)} "
+              f"url: {len(profile_links)} комнат: {len(room)} {len(is_check)}")
+
         df = pd.DataFrame(
             {
                 "id": post_id,
@@ -256,14 +258,15 @@ def scrape_all_profiles(start_url, page):
             df.loc[row, "square"] = square[i]
             df.loc[row, "author"] = author[i]
 
-        write_profiles_to_csv(df)
-        # df.to_sql(
-        #     table_name,
-        #     engine,
-        #     schema=schema_name,
-        #     if_exists='append',
-        #     index=False
-        # )
+        flag = True if page == 1 else False
+        write_profiles_to_csv(df, flag)
+        df.to_sql(
+            table_name,
+            engine,
+            schema=schema_name,
+            if_exists='append',
+            index=False
+        )
         df = df[0:0]
         author = []
         is_check = []
