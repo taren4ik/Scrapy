@@ -210,6 +210,7 @@ def scrape_all_profiles(start_url, page):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
+
             if value.split(",")[0] == "64":
                 area.append("64," + value.split(",")[1])
                 author.append(value.split(",")[2])
@@ -219,6 +220,11 @@ def scrape_all_profiles(start_url, page):
 
             if value.split()[-1] == 'этаж':
                 square.append(value.split()[-5])
+
+            elif value.split()[-2] == 'доля':
+                square.append(
+                    value.split(",")[-3] + ',' + value.split(",")[-2][0]
+                )
             else:
                 square.append(
                     value.split(",")[-2] + "," + value.split(",")[-1][0]

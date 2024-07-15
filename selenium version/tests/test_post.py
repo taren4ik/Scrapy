@@ -3,10 +3,6 @@ import requests
 
 
 class TestPost(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.base = BaseMethod()
-
 
     def test_request(self):
         url = "https://www.farpost.ru/vladivostok/realty/sell_flats/"
