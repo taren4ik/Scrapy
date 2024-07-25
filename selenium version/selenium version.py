@@ -24,7 +24,7 @@ database_uri = (
     f"postgresql://{user}:{password}@{host}/{database}")
 
 engine = create_engine(database_uri)
-
+URL = f"https://www.farpost.ru/vladivostok/realty/sell_flats"
 
 def timer_wrapper(func):
     """
@@ -154,7 +154,7 @@ def scrape_all_profiles(start_url, page):
         if full_post == 0:
             time.sleep(200)
             scrape_all_profiles(
-                "https://www.farpost.ru/vladivostok/realty/sell_flats/",
+                f"{URL}/",
                 page=page
             )
 
@@ -260,13 +260,13 @@ def scrape_all_profiles(start_url, page):
 
         flag = True if page == 1 else False
         write_profiles_to_csv(df, flag)
-        df.to_sql(
-            table_name,
-            engine,
-            schema=schema_name,
-            if_exists='append',
-            index=False
-        )
+        # df.to_sql(
+        #     table_name,
+        #     engine,
+        #     schema=schema_name,
+        #     if_exists='append',
+        #     index=False
+        # )
         df = df[0:0]
         author = []
         is_check = []
@@ -282,7 +282,7 @@ def scrape_all_profiles(start_url, page):
         if page % 50 == 0:
             driver.quit()
         current_url = (
-            f"https://www.farpost.ru/vladivostok/realty/sell_flats?page={page}"
+            f"{URL}?page={page}"
         )
 
         time.sleep(random.uniform(3, 8))
@@ -292,5 +292,7 @@ def scrape_all_profiles(start_url, page):
 
 
 all_profiles = scrape_all_profiles(
-    "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=1
+    f"{URL}/", page=1
+
+
 )
