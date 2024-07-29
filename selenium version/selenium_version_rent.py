@@ -25,9 +25,6 @@ database_uri = (
 
 engine = create_engine(database_uri)
 
-
-
-
 URL = f"https://www.farpost.ru/vladivostok/realty/rent_flats"
 
 
@@ -57,7 +54,7 @@ def write_profiles_to_csv(df, flag=False):
     :return:
     """
     path = datetime.date.today().__str__().replace("-", "_")
-    filename = f"profiles_farpost_{path}.csv"
+    filename = f"profiles_farpost_rent_{path}.csv"
     df.to_csv(
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
@@ -110,7 +107,7 @@ def scrape_all_profiles(start_url, page):
 
     while current_url:
         posts = []
-        if page == 181:
+        if page == 10:
             return True
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(
@@ -300,6 +297,5 @@ def scrape_all_profiles(start_url, page):
 
 all_profiles = scrape_all_profiles(
     f"{URL}/", page=1
-
 
 )
