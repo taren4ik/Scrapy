@@ -211,7 +211,10 @@ def scrape_all_profiles(start_url, page):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-            type_rental = author.append(value.split(",")[-1])
+            if 'аренда' in value.split(",")[-1]:
+                type_rental.append(value.split(",")[-1])
+            else:
+                type_rental.append('None')
 
             if value.split(",")[0] == "64":
                 area.append("64," + value.split(",")[1])
