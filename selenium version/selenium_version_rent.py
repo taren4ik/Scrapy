@@ -107,7 +107,7 @@ def scrape_all_profiles(start_url, page):
 
     while current_url:
         posts = []
-        if page == 10:
+        if page == 11:
             return True
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(
@@ -255,6 +255,7 @@ def scrape_all_profiles(start_url, page):
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
                 "type_rental": type_rental,
+                "type_post": "rent"
             }
         )
         for i, row in enumerate(
