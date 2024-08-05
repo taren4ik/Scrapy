@@ -9,8 +9,6 @@ class TestPost(unittest.TestCase):
         result = requests.get(url).status_code
         self.assertEqual(result, 200, 'Сервер не отвечает')
 
-    def tets_check_post(self):
-        pass
 
 
 

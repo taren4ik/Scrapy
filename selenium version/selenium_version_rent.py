@@ -185,8 +185,8 @@ def scrape_all_profiles(start_url, page):
         profile_links = [
             a["href"]
             for a in soup.find_all(
-                "a", class_="bulletinLink bull-item__self-link auto-shy"
-            )
+                "a", class_="bulletinLink bull-item__self-link auto-shy")
+
         ]
         name_announcement = [
             a.text
@@ -226,10 +226,7 @@ def scrape_all_profiles(start_url, page):
             if value.split()[-3] == 'этаж,':
                 square.append(value.split()[-7])
 
-            # elif value.split()[-2] == 'доля':
-            #     square.append(
-            #         value.split(",")[-3] + ',' + value.split(",")[-2][0]
-            #     )
+
             else:
                 square.append(
                     value.split(",")[-3] + "," + value.split(",")[-2][0]
@@ -254,8 +251,6 @@ def scrape_all_profiles(start_url, page):
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
-                "type_rental": type_rental,
-                "type_post": "rent"
             }
         )
         for i, row in enumerate(
@@ -264,6 +259,14 @@ def scrape_all_profiles(start_url, page):
             df.loc[row, "area"] = area[i]
             df.loc[row, "square"] = square[i]
             df.loc[row, "author"] = author[i]
+
+        for i, row in enumerate(
+                np.where(df["link"] == "javascript:void(0)")[0].tolist()):
+            df.loc[row, "is_check"] = False
+            df.loc[row, "link"] = None
+
+
+
 
         flag = True if page == 1 else False
         write_profiles_to_csv(df, flag)
