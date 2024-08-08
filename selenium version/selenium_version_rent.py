@@ -223,17 +223,18 @@ def scrape_all_profiles(start_url, page):
                 area.append(value.split(",")[0])
                 author.append(value.split(",")[1])
 
-            if value.split()[-3] == 'этаж,':
-                square.append(value.split()[-7])
+            if 'кв.' in value:
+                if value.split()[-3] == 'этаж,':
+                    square.append(value.split()[-7])
+                else:
+                    square.append(
+                        value.split(",")[-3] + "," + value.split(",")[-2][0]
 
-
+                        if len(value.split(",")) > 2
+                        else 0
+                    )
             else:
-                square.append(
-                    value.split(",")[-3] + "," + value.split(",")[-2][0]
-
-                    if len(value.split(",")) > 2
-                    else 0
-                )
+                square.append(None)
         print(f"Постов {len(post_id)}  {len(name_announcement)} "
               f"url: {len(profile_links)} комнат: {len(room)} "
               f"аквтивное: {len(is_check)}")
