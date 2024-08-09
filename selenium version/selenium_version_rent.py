@@ -2,6 +2,7 @@ import datetime
 import os
 import random
 import time
+import logging
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,13 @@ database_uri = (
 engine = create_engine(database_uri)
 
 URL = f"https://www.farpost.ru/vladivostok/realty/rent_flats"
+
+logging.basicConfig(
+    level=logging.INFO,
+    filename=f'log_{datetime.datetime.now().date()}.log',
+    filemode='w',
+    format='%(asctime)s, %(levelname)s, %(message)s, %(name)s,  %(lineno)s'
+)
 
 
 def timer_wrapper(func):
@@ -106,7 +114,6 @@ def scrape_all_profiles(start_url, page):
     user_agents = USER_AGENTS
 
     while current_url:
-        posts = []
         if page == 11:
             return True
         if page == 1 or page % 50 == 0:
@@ -123,7 +130,7 @@ def scrape_all_profiles(start_url, page):
         time.sleep(random.uniform(3, 8))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
-        print(f'Страница: {page}')
+        logging.info(f'Страница: {page}')
 
         if soup.find_all("div", id="map", ):  # проверка на карту
             checkbox = driver.find_element(
@@ -235,7 +242,8 @@ def scrape_all_profiles(start_url, page):
                     )
             else:
                 square.append(None)
-        print(f"Постов {len(post_id)}  {len(name_announcement)} "
+
+        logging.info(f"Постов {len(post_id)}  {len(name_announcement)} "
               f"url: {len(profile_links)} комнат: {len(room)} "
               f"аквтивное: {len(is_check)}")
 
@@ -271,6 +279,7 @@ def scrape_all_profiles(start_url, page):
 
         flag = True if page == 1 else False
         write_profiles_to_csv(df, flag)
+        logging.info('Файл записан')
         # df.to_sql(
         #     table_name,
         #     engine,
