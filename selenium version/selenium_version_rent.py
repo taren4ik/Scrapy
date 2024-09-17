@@ -42,14 +42,14 @@ def timer_wrapper(func):
     :param func:
     :return:
     """
-
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
         difference_time = end_time - start_time
-        print(
-            f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
+        logging.info(
+            f"Функция {func.__name__} "
+            f"выполнилась за {difference_time:.4f} секунд.")
         return result
 
     return wrapper
@@ -273,8 +273,6 @@ def scrape_all_profiles(start_url, page):
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):
             df.loc[row, "is_check"] = False
             df.loc[row, "link"] = None
-
-
 
 
         flag = True if page == 1 else False

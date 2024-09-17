@@ -264,6 +264,7 @@ def scrape_all_profiles(start_url, page):
             df.loc[row, "author"] = author[i]
 
         flag = True if page == 1 else False
+        df['square'] = df['square'].replace('кв.', 0)
         write_profiles_to_csv(df, flag)
         # df.to_sql(
         #     table_name,
