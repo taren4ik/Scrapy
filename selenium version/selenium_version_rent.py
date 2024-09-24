@@ -114,8 +114,7 @@ def scrape_all_profiles(start_url, page):
     user_agents = USER_AGENTS
 
     while current_url:
-        if page == 11:
-            return True
+
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(
                 f"user-agent={random.choice(user_agents)}"
@@ -130,6 +129,14 @@ def scrape_all_profiles(start_url, page):
         time.sleep(random.uniform(3, 8))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
+
+        posts = int(soup.find_all("span", id="itemsCount_placeholder")[0][
+            "data-count"])
+
+        page_limit = round(posts / 50 + 1)
+        if page == page_limit:
+            return True
+
         logging.info(f'Страница: {page}')
 
         if soup.find_all("div", id="map", ):  # проверка на карту
