@@ -111,7 +111,6 @@ def scrape_all_profiles(start_url, page):
     user_agents = USER_AGENTS
 
     while current_url:
-        posts = []
         if page == 181:
             return True
         if page == 1 or page % 50 == 0:
@@ -254,6 +253,7 @@ def scrape_all_profiles(start_url, page):
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
+                "type_post": "sell"
             }
         )
         for i, row in enumerate(
@@ -299,6 +299,4 @@ def scrape_all_profiles(start_url, page):
 
 all_profiles = scrape_all_profiles(
     f"{URL}/", page=1
-
-
 )
