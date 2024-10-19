@@ -2,6 +2,7 @@ import datetime
 import os
 import random
 import time
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -44,7 +45,8 @@ def timer_wrapper(func):
         end_time = time.time()
         difference_time = end_time - start_time
         print(
-            f"Функция {func.__name__} выполнилась за {difference_time:.4f} секунд.")
+            f"Функция {func.__name__} выполнилась за "
+            f"{difference_time:.4f} секунд.")
         return result
 
     return wrapper
@@ -82,19 +84,45 @@ def extract_post(soup, **kwargs):
     return posts
 
 
+class ApartmentAttribute:
+
+    def __init__(self):
+        self.area = []
+        self.author = []
+        self.square = []
+        self.is_check = []
+        self. room = []
+        self.views = []
+        self.post_id = []
+        self.profile_links = []
+        self.name_announcement = []
+
+    def clean_attribute(self):
+        self.area = []
+        self.author = []
+        self.square = []
+        self.is_check = []
+        self.room = []
+        self.views = []
+        self.post_id = []
+        self.profile_links = []
+        self.name_announcement = []
+
+
+
 @timer_wrapper
 def scrape_all_profiles(start_url, page):
     """
     Извлекает основную информацию на все объявления
     :return:
     """
-    area = []
-    author = []
-    square = []
-    is_check = []
-    room = []
-    views = []
-    post_id = []
+    # area = []
+    # author = []
+    # square = []
+    # is_check = []
+    # room = []
+    # views = []
+    # post_id = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(
@@ -109,6 +137,7 @@ def scrape_all_profiles(start_url, page):
     # chrome_options.add_argument(r'user-data-dir=D:\developer\scrapy')
     # chrome_options.add_argument('--profile-directory=Profile 1')
     user_agents = USER_AGENTS
+    apartament = ApartmentAttribute()
 
     while current_url:
         if page == 181:
@@ -164,42 +193,43 @@ def scrape_all_profiles(start_url, page):
 
         for post in full_post[0]:
             if post.find("a")["name"]:
-                post_id.append(post.find("a")["name"] if post.find("a")[
+                apartament.post_id.append(post.find("a")["name"] if post.find(
+                    "a")[
                                                              "name"][
                                                              0] != '-' else
                                post.find("a")["name"][1:])
             else:
-                post_id.append(post.parent.a["name"] if post.parent.a[
+                apartament.post_id.append(post.parent.a["name"] if post.parent.a[
                                                             "name"][
                                                             0] != '-' else
                                post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
-                is_check.append("True")
+                apartament.is_check.append("True")
             else:
-                is_check.append("False")
+                apartament.is_check.append("False")
 
             if post.find("span", class_="views nano-eye-text"):
-                views.append(
+                apartament.views.append(
                     post.find("span", class_="views nano-eye-text").text
                 )
             else:
-                views.append("0")
+                apartament.views.append("0")
 
-        profile_links = [
+        apartament.profile_links = [
             a["href"]
             for a in soup.find_all(
                 "a", class_="bulletinLink bull-item__self-link auto-shy"
             )
         ]
-        name_announcement = [
+        apartament.name_announcement = [
             a.text
             for a in soup.find_all(
                 "a", class_="bulletinLink bull-item__self-link auto-shy"
             )
         ]
-        for value in name_announcement:
-            room.append(
+        for value in apartament.name_announcement:
+            apartament.room.append(
                 value[0]
                 if value[0].isdigit() or value.startswith(
                     "Гостинка") or value.startswith("Комната")
@@ -217,39 +247,41 @@ def scrape_all_profiles(start_url, page):
         for value in district:
 
             if value.split(",")[0] == "64":
-                area.append("64," + value.split(",")[1])
-                author.append(value.split(",")[2])
+                apartament.area.append("64," + value.split(",")[1])
+                apartament.author.append(value.split(",")[2])
             else:
-                area.append(value.split(",")[0])
-                author.append(value.split(",")[1])
+                apartament.area.append(value.split(",")[0])
+                apartament.author.append(value.split(",")[1])
 
             if value.split()[-1] == 'этаж':
-                square.append(value.split()[-5])
+                apartament.square.append(value.split()[-5])
 
             elif value.split()[-2] == 'доля':
-                square.append(
+                apartament.square.append(
                     value.split(",")[-3] + ',' + value.split(",")[-2][0]
                 )
             else:
-                square.append(
+                apartament.square.append(
                     value.split(",")[-2] + "," + value.split(",")[-1][0]
 
                     if len(value.split(",")) > 2
                     else 0
                 )
-        print(f"Пост {len(post_id)}  {len(name_announcement)} "
-              f"url: {len(profile_links)} комнат: {len(room)} {len(is_check)}")
+        print(f"Пост {len(apartament.post_id)}  {len(apartament.name_announcement)} "
+              f"url: {len(apartament.profile_links)} комнат: "
+              f"{len(apartament.room)}"
+              f" {len(apartament.is_check)}")
 
         df = pd.DataFrame(
             {
-                "id": post_id,
-                "text": name_announcement,
+                "id": apartament.post_id,
+                "text": apartament.name_announcement,
                 "area": "None",
-                "link": profile_links,
-                "view": views,
+                "link": apartament.profile_links,
+                "view": apartament.views,
                 "cost": "None",
-                "room": room,
-                "is_check": is_check,
+                "room": apartament.room,
+                "is_check": apartament.is_check,
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
@@ -259,9 +291,9 @@ def scrape_all_profiles(start_url, page):
         for i, row in enumerate(
                 np.where(df["is_check"] == "True")[0].tolist()):
             df.loc[row, "cost"] = cost[i]
-            df.loc[row, "area"] = area[i]
-            df.loc[row, "square"] = square[i]
-            df.loc[row, "author"] = author[i]
+            df.loc[row, "area"] = apartament.area[i]
+            df.loc[row, "square"] = apartament.square[i]
+            df.loc[row, "author"] = apartament.author[i]
 
         flag = True if page == 1 else False
         df['square'] = df['square'].replace('кв.', 0)
@@ -274,13 +306,13 @@ def scrape_all_profiles(start_url, page):
         #     index=False
         # )
         df = df[0:0]
-        author = []
-        is_check = []
-        square = []
-        area = []
-        room = []
-        views = []
-        post_id = []
+        # author = []
+        # is_check = []
+        # square = []
+        # area = []
+        # room = []
+        # views = []
+        # post_id = []
         if page > 1 and page % 50 != 0:
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
@@ -290,7 +322,7 @@ def scrape_all_profiles(start_url, page):
         current_url = (
             f"{URL}?page={page}"
         )
-
+        apartament.clean_attribute()
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
