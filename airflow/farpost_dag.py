@@ -36,7 +36,6 @@ def write_table():
     print('Result')
 
 
-
 def write_profiles_to_csv(df, flag=False):
     """
     Запись информации в файл из DataFrame.
@@ -71,7 +70,7 @@ def extract_post(soup, **kwargs):
 
 
 class ApartmentAttribute:
-
+    """Создание переменных экземпляра."""
     def __init__(self):
         self.area = []
         self.author = []
