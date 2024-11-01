@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+CHANNEL = os.getenv("CHANNEL")
 email = os.getenv("EMAIL")
 password = os.getenv("PASSWORD")
 
@@ -23,8 +23,12 @@ def send_image_to_telegram(image_path):
     """
     url = f'https://api.telegram.org/bot{TOKEN}/sendPhoto'
     files = {'photo': open(image_path, 'rb')}
-    data = {'chat_id': CHAT_ID}
+    data = {
+        'chat_id': CHANNEL,
+        'caption': "Недельный обзор"
+    }
     response = requests.post(url, files=files, data=data)
+
     return response
 
 
