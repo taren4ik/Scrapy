@@ -28,7 +28,10 @@ def send_image_to_telegram(image_path):
         'caption': "Недельный обзор"
     }
     response = requests.post(url, files=files, data=data)
-
+    if response.status_code == 200:
+        print("Сообщение отправлено!")
+    else:
+        print("Ошибка:", response.status_code, response.text)
     return response
 
 
@@ -57,16 +60,9 @@ def capture_dashboard():
     driver = webdriver.Chrome()
     driver.get('http://127.0.0.1:3000/dashboard/10')
     time.sleep(5)
-    # email_input = driver.find_element(By.CSS_SELECTOR, 'input[type="email"]')
-    # email_input.send_keys('')
-    # time.sleep(random.uniform(2, 5))
+
     insert_form(driver, "email", f'{email}')
     insert_form(driver, "password", f'{password}')
-    # password_input = driver.find_element(
-    #     By.CSS_SELECTOR, 'input[type="password"]'
-    # )
-    # password_input.send_keys('')
-    # time.sleep(random.uniform(2, 5))
 
     button = driver.find_element(By.CSS_SELECTOR, 'button[title="Войти"]')
     button.click()
@@ -80,24 +76,5 @@ def capture_dashboard():
 if __name__ == '__main__':
     capture_dashboard()
     send_image_to_telegram("sell.png")
-
-# URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-# dashboard_url = """http://vl_city.ru/public/dashboard/74dcfb3b-00fa-46a5
-# -9528-ad04bd6e69f4"""
-#
-#
-# params = {
-#     "chat_id": CHAT_ID,
-#     "text": f"Просмотр доступен по ссылке: {dashboard_url}",
-# }
-#
-#
-# response = requests.get(URL, params=params)
-#
-#
-# if response.status_code == 200:
-#     print("Сообщение отправлено!")
-# else:
-#     print("Ошибка:", response.status_code, response.text)
 
 
