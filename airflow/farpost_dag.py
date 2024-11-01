@@ -1,7 +1,7 @@
 import datetime
 import random
 import time
-import  os
+import os
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,7 @@ from selenium.webdriver.common.by import By
 from user_agents import USER_AGENTS
 
 from airflow import DAG
-from airflow.models import Variable
+from airflow.utils.task_group import TaskGroup
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
@@ -31,9 +31,14 @@ args = {
     'provide_context': True
 }
 
+param = {
+    'start_url': 'https://www.farpost.ru/vladivostok/realty/sell_flats/',
+    'page': 1
+}
 
-def write_table():
-    print('Result')
+
+def initial():
+    print('RUN')
 
 
 def write_profiles_to_csv(df, flag=False):
@@ -70,13 +75,13 @@ def extract_post(soup, **kwargs):
 
 
 class ApartmentAttribute:
-    """Создание переменных экземпляра."""
+
     def __init__(self):
         self.area = []
         self.author = []
         self.square = []
         self.is_check = []
-        self. room = []
+        self.room = []
         self.views = []
         self.post_id = []
         self.profile_links = []
@@ -92,9 +97,6 @@ class ApartmentAttribute:
         self.post_id = []
         self.profile_links = []
         self.name_announcement = []
-
-
-
 
 
 def scrape_all_profiles(**kwargs):
@@ -117,7 +119,6 @@ def scrape_all_profiles(**kwargs):
     user_agents = USER_AGENTS
     apartament = ApartmentAttribute()
 
-
     while current_url:
         if page == 181:
             return True
@@ -125,7 +126,6 @@ def scrape_all_profiles(**kwargs):
             chrome_options.add_argument(
                 f"user-agent={random.choice(user_agents)}"
             )
-            #driver = webdriver.Chrome(options=chrome_options)
             driver = webdriver.Remote(f'{remote_webdriver}:4444/wd/hub',
                                       options=chrome_options)
         else:
@@ -176,16 +176,12 @@ def scrape_all_profiles(**kwargs):
             if post.find("a")["name"]:
                 apartament.post_id.append(
                     post.find("a")["name"] if post.find(
-                        "a")[
-                                                  "name"][
-                                                  0] != '-' else
+                        "a")["name"][0] != '-' else
                     post.find("a")["name"][1:])
             else:
                 apartament.post_id.append(
-                    post.parent.a["name"] if post.parent.a[
-                                                 "name"][
-                                                 0] != '-' else
-                    post.parent.a["name"][1:])
+                    post.parent.a["name"] if post.parent.a["name"][0] != '-'
+                    else post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
                 apartament.is_check.append("True")
@@ -306,34 +302,24 @@ def scrape_all_profiles(**kwargs):
     return True
 
 
-#  ti.xcom_push(key='farpost_data', value=json_data)
-
-
 with DAG('farpost_dag',
          description='select and transform data',
-         schedule='*/1 * * * *',
+         schedule='*/50 * * * *',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
          tags=['farpost', 'etl']
          ) as dag:
-    extract_data = PythonOperator(task_id='extract_data',
-                                  python_callable=scrape_all_profiles,
-                                  op_kwargs={'start_url':
-                                                 'https://www.farpost.ru/vladivostok/realty/sell_flats/',
-                                             'page': 1}
+    with TaskGroup(group_id='push_db') as processing_tasks:
+        extract_data = PythonOperator(
+            task_id='extract_data',
+            python_callable=scrape_all_profiles,
+            op_kwargs=param
+        )
 
-                                  )
-
-    # transform_data = PythonOperator(task_id='transform_data',
-    #                                  python_callable=write_profiles_to_csv)
-
-    # all_profiles = scrape_all_profiles(
-    #     "https://www.farpost.ru/vladivostok/realty/sell_flats/", page=1
-    # )
-    write_data = PythonOperator(task_id='write_data',
-                                python_callable=write_table)
-    extract_data >> write_data
+    initial = PythonOperator(task_id='initial',
+                             python_callable=initial)
+    initial >> extract_data
 
 if __name__ == "__main__":
     dag.test()
