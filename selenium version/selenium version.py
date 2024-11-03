@@ -21,10 +21,7 @@ schema_name = os.getenv("DB_SCHEMA")
 table_name = os.getenv("DB_TABLE_NAME")
 user = os.getenv("DB_USER")
 password = os.getenv("DB_PASS")
-database_uri = (
-    f"postgresql://{user}:{password}@{host}/{database}")
 
-engine = create_engine(database_uri)
 
 POST_TYPE = ('rent_flats', 'sell_flats')
 
@@ -64,6 +61,7 @@ def write_profiles_to_csv(df, flag=False):
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
     )
+    return filename
 
 
 def extract_post(soup, **kwargs):
@@ -297,22 +295,8 @@ def scrape_all_profiles(start_url, page):
 
         flag = True if page == 1 else False
         df['square'] = df['square'].replace('кв.', 0)
-        write_profiles_to_csv(df, flag)
-        # df.to_sql(
-        #     table_name,
-        #     engine,
-        #     schema=schema_name,
-        #     if_exists='append',
-        #     index=False
-        # )
+        filename = write_profiles_to_csv(df, flag)
         df = df[0:0]
-        # author = []
-        # is_check = []
-        # square = []
-        # area = []
-        # room = []
-        # views = []
-        # post_id = []
         if page > 1 and page % 50 != 0:
             driver.close()
             driver.switch_to.window(driver.window_handles[0])
@@ -326,9 +310,36 @@ def scrape_all_profiles(start_url, page):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    return True
+    return filename
 
 
-all_profiles = scrape_all_profiles(
-    f"{URL}/", page=1
-)
+def load_db(filename):
+    """
+    Загрузка в stage слой.
+    :param path:
+    :return:
+    """
+    df = pd.read_csv(f'{filename}')
+    database_uri = (
+        f"postgresql://{user}:{password}@{host}/{database}")
+
+    engine = create_engine(database_uri)
+
+    with engine.begin() as connection:
+        try:
+            df.to_sql(
+                table_name,
+                connection,
+                schema=schema_name,
+                if_exists='append',
+                index=False
+            )
+        except Exception as e:
+            print(f"Ошибка: {e}")
+
+
+if __name__ == '__main__':
+
+    load_db(
+        all_profiles=scrape_all_profiles(f"{URL}/", page=1)
+    )
