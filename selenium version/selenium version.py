@@ -45,7 +45,6 @@ def timer_wrapper(func):
             f"Функция {func.__name__} выполнилась за "
             f"{difference_time:.4f} секунд.")
         return result
-
     return wrapper
 
 
@@ -114,13 +113,6 @@ def scrape_all_profiles(start_url, page):
     Извлекает основную информацию на все объявления
     :return:
     """
-    # area = []
-    # author = []
-    # square = []
-    # is_check = []
-    # room = []
-    # views = []
-    # post_id = []
     current_url = start_url
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(
@@ -319,27 +311,40 @@ def load_db(filename):
     :param path:
     :return:
     """
-    df = pd.read_csv(f'{filename}')
+
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}")
 
     engine = create_engine(database_uri)
 
+    try:
+        df = pd.read_csv(
+            filename,
+            encoding='utf-16',
+            delimiter=';',
+            header=0,
+            engine='python',
+
+        )
+    except Exception as e:
+        print(f"Ошибка при загрузке CSV: {e}")
+
+    df.drop_duplicates(subset=['id'], keep='first', inplace=True)
+    if 'is_check' in df.columns:
+        df['is_check'] = df['is_check'].astype(bool)
+
     with engine.begin() as connection:
-        try:
-            df.to_sql(
-                table_name,
-                connection,
-                schema=schema_name,
-                if_exists='append',
-                index=False
-            )
-        except Exception as e:
-            print(f"Ошибка: {e}")
+        df.to_sql(
+            table_name,
+            connection,
+            schema=schema_name,
+            if_exists='append',
+            index=False
+        )
 
 
 if __name__ == '__main__':
-
     load_db(
         all_profiles=scrape_all_profiles(f"{URL}/", page=1)
+
     )
