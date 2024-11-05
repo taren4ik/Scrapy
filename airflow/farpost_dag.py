@@ -11,15 +11,25 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from sqlalchemy import create_engine
+
 from user_agents import USER_AGENTS
 
 from airflow import DAG
+from airflow.models import Variable
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 load_dotenv()
+
+host = os.getenv("DB_HOST")
+database = os.getenv("DB_NAME")
+schema_name = os.getenv("DB_SCHEMA")
+table_name = os.getenv("DB_TABLE_NAME")
+user = os.getenv("DB_USER")
+password = os.getenv("DB_PASS")
 
 POST_TYPE = ('rent_flats', 'sell_flats')
 user_agents = USER_AGENTS
@@ -104,6 +114,7 @@ def scrape_all_profiles(**kwargs):
     Извлекает основную информацию на все объявления.
     :return:
     """
+    ti = kwargs['ti']
     current_url = kwargs['start_url']
     page = kwargs['page']
 
@@ -277,14 +288,8 @@ def scrape_all_profiles(**kwargs):
 
         flag = True if page == 1 else False
         df['square'] = df['square'].replace('кв.', 0)
-        write_profiles_to_csv(df, flag)
-        # df.to_sql(
-        #     table_name,
-        #     engine,
-        #     schema=schema_name,
-        #     if_exists='append',
-        #     index=False
-        # )
+        filename = write_profiles_to_csv(df, flag)
+
         df = df[0:0]
         if page > 1 and page % 50 != 0:
             driver.close()
@@ -299,12 +304,50 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    return True
+    ti.xcom_push(key='weather_wwo_df', value=filename)
+
+
+def load_db(**kwargs):
+    """
+    Загрузка в stage слой.
+    :param path:
+    :return:
+    """
+    ti = kwargs['ti']
+    database_uri = (
+        f"postgresql://{user}:{password}@{host}/{database}")
+
+    engine = create_engine(database_uri)
+    filename = ti.xcom_pull(key='filename', task_ids=['extract_data'])
+    try:
+        df = pd.read_csv(
+            filename,
+            encoding='utf-16',
+            delimiter=';',
+            header=0,
+            engine='python',
+
+        )
+    except Exception as e:
+        print(f"Ошибка при загрузке CSV: {e}")
+
+    df.drop_duplicates(subset=['id'], keep='first', inplace=True)
+    if 'is_check' in df.columns:
+        df['is_check'] = df['is_check'].astype(bool)
+
+    with engine.begin() as connection:
+        df.to_sql(
+            table_name,
+            connection,
+            schema=schema_name,
+            if_exists='append',
+            index=False
+        )
 
 
 with DAG('farpost_dag',
          description='select and transform data',
-         schedule='*/50 * * * *',
+         schedule='55 * * * * ',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
@@ -317,9 +360,14 @@ with DAG('farpost_dag',
             op_kwargs=param
         )
 
-    initial = PythonOperator(task_id='initial',
-                             python_callable=initial)
-    initial >> extract_data
+        load_data = PythonOperator(
+            task_id='load_data',
+            python_callable=load_db,
+            op_kwargs=param
+        )
+        load_db
+    initial = PythonOperator(task_id='initial', python_callable=initial)
+    initial >> extract_data >> load_data
 
 if __name__ == "__main__":
     dag.test()
