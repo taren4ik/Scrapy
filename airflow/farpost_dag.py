@@ -304,7 +304,7 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    ti.xcom_push(key='weather_wwo_df', value=filename)
+    ti.xcom_push(key='filename', value=filename)
 
 
 def load_db(**kwargs):
