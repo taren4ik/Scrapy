@@ -106,12 +106,12 @@ services:
     container_name: postgres_data
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 292516
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     ports:
       - "5433:5432"
     volumes:
-        - postgres_data:/var/lib/postgresql/data
+      - postgres_data-db-volume:/var/lib/postgresql/data
 
 
   redis:
@@ -299,3 +299,4 @@ services:
 
 volumes:
   postgres-db-volume:
+  postgres_data-db-volume:
