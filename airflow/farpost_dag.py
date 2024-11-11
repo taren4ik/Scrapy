@@ -24,6 +24,14 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 load_dotenv()
 
+# host='localhost'
+# DB_PORT=5432
+# user='postgres'
+# password=292516
+# database='postgres'
+# schema_name = 'farpost'
+# table_name='farpost_staging'
+
 host = os.getenv("DB_HOST")
 database = os.getenv("DB_NAME")
 schema_name = os.getenv("DB_SCHEMA")
@@ -289,7 +297,6 @@ def scrape_all_profiles(**kwargs):
         flag = True if page == 1 else False
         df['square'] = df['square'].replace('кв.', 0)
         filename = write_profiles_to_csv(df, flag)
-
         df = df[0:0]
         if page > 1 and page % 50 != 0:
             driver.close()
@@ -304,7 +311,7 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    ti.xcom_push(key='filename', value=filename)
+    return filename
 
 
 def load_db(**kwargs):
@@ -318,7 +325,7 @@ def load_db(**kwargs):
         f"postgresql://{user}:{password}@{host}/{database}")
 
     engine = create_engine(database_uri)
-    filename = ti.xcom_pull(key='filename', task_ids=['extract_data'])
+    filename = ti.xcom_pull(task_ids='extract_data')
     try:
         df = pd.read_csv(
             filename,
@@ -326,14 +333,12 @@ def load_db(**kwargs):
             delimiter=';',
             header=0,
             engine='python',
-
         )
+        df.drop_duplicates(subset=['id'], keep='first', inplace=True)
+        if 'is_check' in df.columns:
+            df['is_check'] = df['is_check'].astype(bool)
     except Exception as e:
         print(f"Ошибка при загрузке CSV: {e}")
-
-    df.drop_duplicates(subset=['id'], keep='first', inplace=True)
-    if 'is_check' in df.columns:
-        df['is_check'] = df['is_check'].astype(bool)
 
     with engine.begin() as connection:
         df.to_sql(
@@ -365,7 +370,7 @@ with DAG('farpost_dag',
             python_callable=load_db,
             op_kwargs=param
         )
-        load_db
+
     initial = PythonOperator(task_id='initial', python_callable=initial)
     initial >> extract_data >> load_data
 
