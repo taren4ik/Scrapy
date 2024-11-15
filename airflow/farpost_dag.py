@@ -65,14 +65,19 @@ def write_profiles_to_csv(df, flag=False):
     :param df, flag:
     :return:
     """
-    path = datetime.date.today().__str__().replace("-", "_")
-    filename = f"profiles_farpost_{path}.csv"
-    print("Current working directory:", os.getcwd())
+    #path = datetime.date.today().__str__().replace("-", "_")
+    #filename = f"profiles_farpost_{path}.csv"
+    #print("Current working directory:", os.getcwd())
+    attribute = datetime.date.today().strftime('%Y_%m_%d')
+    path = "/opt/airflow/data"
+    os.makedirs(path, exist_ok=True)  # создаем каталог, если он не существует
+    filename = f"{path}/profiles_farpost_{attribute}.csv"
+
     df.to_csv(
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
     )
-
+    return filename
 
 def extract_post(soup, **kwargs):
     """
@@ -162,7 +167,6 @@ def scrape_all_profiles(**kwargs):
             checkbox = driver.find_element(
                 By.CSS_SELECTOR, '.bzr-toggle input[type="checkbox"]')
             driver.execute_script("arguments[0].click();", checkbox)
-
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
@@ -321,11 +325,14 @@ def load_db(**kwargs):
     :return:
     """
     ti = kwargs['ti']
+    #filename = ti.xcom_pull(task_ids='extract_data')
+    filename ='/opt/airflow/data/profiles_farpost_2024_11_13.csv'
+    print(filename)
     database_uri = (
-        f"postgresql://{user}:{password}@{host}/{database}")
+        f"postgresql://{user}:{password}@{host}/{database}"
+    )
 
     engine = create_engine(database_uri)
-    filename = ti.xcom_pull(task_ids='extract_data')
     try:
         df = pd.read_csv(
             filename,
@@ -335,8 +342,14 @@ def load_db(**kwargs):
             engine='python',
         )
         df.drop_duplicates(subset=['id'], keep='first', inplace=True)
+
+        if 'date' in df.columns:
+            df['date'] = pd.to_datetime(df['date'],
+                                        errors='coerce')
         if 'is_check' in df.columns:
             df['is_check'] = df['is_check'].astype(bool)
+
+
     except Exception as e:
         print(f"Ошибка при загрузке CSV: {e}")
 
@@ -352,7 +365,7 @@ def load_db(**kwargs):
 
 with DAG('farpost_dag',
          description='select and transform data',
-         schedule='55 * * * * ',
+         schedule_interval='0 */2 * * *',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
@@ -372,7 +385,7 @@ with DAG('farpost_dag',
         )
 
     initial = PythonOperator(task_id='initial', python_callable=initial)
-    initial >> extract_data >> load_data
+    initial  >> load_data
 
 if __name__ == "__main__":
     dag.test()
