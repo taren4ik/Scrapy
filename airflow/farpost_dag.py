@@ -5,7 +5,7 @@ import os
 
 import numpy as np
 import pandas as pd
-import requests
+
 
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -23,14 +23,6 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 load_dotenv()
-
-# host='localhost'
-# DB_PORT=5432
-# user='postgres'
-# password=292516
-# database='postgres'
-# schema_name = 'farpost'
-# table_name='farpost_staging'
 
 host = os.getenv("DB_HOST")
 database = os.getenv("DB_NAME")
@@ -65,9 +57,9 @@ def write_profiles_to_csv(df, flag=False):
     :param df, flag:
     :return:
     """
-    #path = datetime.date.today().__str__().replace("-", "_")
-    #filename = f"profiles_farpost_{path}.csv"
-    #print("Current working directory:", os.getcwd())
+    # path = datetime.date.today().__str__().replace("-", "_")
+    # filename = f"profiles_farpost_{path}.csv"
+    # print("Current working directory:", os.getcwd())
     attribute = datetime.date.today().strftime('%Y_%m_%d')
     path = "/opt/airflow/data"
     os.makedirs(path, exist_ok=True)  # создаем каталог, если он не существует
@@ -78,6 +70,7 @@ def write_profiles_to_csv(df, flag=False):
         encoding="utf-16"
     )
     return filename
+
 
 def extract_post(soup, **kwargs):
     """
@@ -325,14 +318,14 @@ def load_db(**kwargs):
     :return:
     """
     ti = kwargs['ti']
-    #filename = ti.xcom_pull(task_ids='extract_data')
-    filename ='/opt/airflow/data/profiles_farpost_2024_11_13.csv'
+    filename = ti.xcom_pull(task_ids='extract_data')
     print(filename)
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
 
     engine = create_engine(database_uri)
+    df = None
     try:
         df = pd.read_csv(
             filename,
@@ -348,7 +341,6 @@ def load_db(**kwargs):
                                         errors='coerce')
         if 'is_check' in df.columns:
             df['is_check'] = df['is_check'].astype(bool)
-
 
     except Exception as e:
         print(f"Ошибка при загрузке CSV: {e}")
@@ -385,7 +377,7 @@ with DAG('farpost_dag',
         )
 
     initial = PythonOperator(task_id='initial', python_callable=initial)
-    initial  >> load_data
+    initial >> extract_data >> load_data
 
 if __name__ == "__main__":
     dag.test()
