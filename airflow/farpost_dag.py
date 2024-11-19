@@ -6,7 +6,6 @@ import os
 import numpy as np
 import pandas as pd
 
-
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -24,12 +23,20 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 load_dotenv()
 
-host = os.getenv("DB_HOST")
-database = os.getenv("DB_NAME")
-schema_name = os.getenv("DB_SCHEMA")
-table_name = os.getenv("DB_TABLE_NAME")
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASS")
+host = 'postgres_data'
+DB_PORT = 5432
+user = 'postgres'
+password = 'postgres'
+database = 'postgres'
+schema_name = 'farpost'
+table_name = 'farpost_staging'
+
+# host = os.getenv("DB_HOST")
+# database = os.getenv("DB_NAME")
+# schema_name = os.getenv("DB_SCHEMA")
+# table_name = os.getenv("DB_TABLE_NAME")
+# user = os.getenv("DB_USER")
+# password = os.getenv("DB_PASS")
 
 POST_TYPE = ('rent_flats', 'sell_flats')
 user_agents = USER_AGENTS
@@ -308,6 +315,7 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
+    ti.xcom_push(key='filename', value=filename)
     return filename
 
 
@@ -318,14 +326,13 @@ def load_db(**kwargs):
     :return:
     """
     ti = kwargs['ti']
-    filename = ti.xcom_pull(task_ids='extract_data')
+    filename = ti.xcom_pull(key='filename', task_ids='push_db.extract_data')
     print(filename)
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
 
     engine = create_engine(database_uri)
-    df = None
     try:
         df = pd.read_csv(
             filename,
@@ -374,7 +381,7 @@ with DAG('farpost_dag',
             task_id='load_data',
             python_callable=load_db,
             op_kwargs=param
-        )
+    )
 
     initial = PythonOperator(task_id='initial', python_callable=initial)
     initial >> extract_data >> load_data
