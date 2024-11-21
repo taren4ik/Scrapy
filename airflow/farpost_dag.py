@@ -64,14 +64,11 @@ def write_profiles_to_csv(df, flag=False):
     :param df, flag:
     :return:
     """
-    # path = datetime.date.today().__str__().replace("-", "_")
-    # filename = f"profiles_farpost_{path}.csv"
-    # print("Current working directory:", os.getcwd())
     attribute = datetime.date.today().strftime('%Y_%m_%d')
     path = "/opt/airflow/data"
     os.makedirs(path, exist_ok=True)  # создаем каталог, если он не существует
     filename = f"{path}/profiles_farpost_{attribute}.csv"
-
+    print(filename)
     df.to_csv(
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
@@ -122,6 +119,7 @@ class ApartmentAttribute:
         self.name_announcement = []
 
 
+
 def scrape_all_profiles(**kwargs):
     """
     Извлекает основную информацию на все объявления.
@@ -130,6 +128,7 @@ def scrape_all_profiles(**kwargs):
     ti = kwargs['ti']
     current_url = kwargs['start_url']
     page = kwargs['page']
+    filename = ''
 
     remote_webdriver = 'http://remote_chromedriver'
     chrome_options = webdriver.ChromeOptions()
@@ -315,8 +314,8 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
+    print(filename)
     ti.xcom_push(key='filename', value=filename)
-    return filename
 
 
 def load_db(**kwargs):
@@ -326,7 +325,7 @@ def load_db(**kwargs):
     :return:
     """
     ti = kwargs['ti']
-    filename = ti.xcom_pull(key='filename', task_ids='push_db.extract_data')
+    filename = ti.xcom_pull(key='filename', task_ids='extract_data')
     print(filename)
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
@@ -370,17 +369,17 @@ with DAG('farpost_dag',
          default_args=args,
          tags=['farpost', 'etl']
          ) as dag:
-    with TaskGroup(group_id='push_db') as processing_tasks:
-        extract_data = PythonOperator(
-            task_id='extract_data',
-            python_callable=scrape_all_profiles,
-            op_kwargs=param
-        )
+   # with TaskGroup(group_id='push_db') as processing_tasks:
+    extract_data = PythonOperator(
+        task_id='extract_data',
+        python_callable=scrape_all_profiles,
+        op_kwargs=param
+    )
 
-        load_data = PythonOperator(
-            task_id='load_data',
-            python_callable=load_db,
-            op_kwargs=param
+    load_data = PythonOperator(
+        task_id='load_data',
+        python_callable=load_db,
+        op_kwargs=param
     )
 
     initial = PythonOperator(task_id='initial', python_callable=initial)
