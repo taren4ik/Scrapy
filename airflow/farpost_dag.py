@@ -53,27 +53,28 @@ param = {
     'page': 1
 }
 
+attribute = datetime.date.today().strftime('%Y_%m_%d')
+path = "/opt/airflow/data"
+os.makedirs(path, exist_ok=True)  # создаем каталог, если он не существует
+filename = f"{path}/profiles_farpost_{attribute}.csv"
 
 def initial():
     print('RUN')
 
 
-def write_profiles_to_csv(df, flag=False):
+
+def write_profiles_to_csv(df, filename, flag=False):
     """
     Запись информации в файл из DataFrame.
     :param df, flag:
     :return:
     """
-    attribute = datetime.date.today().strftime('%Y_%m_%d')
-    path = "/opt/airflow/data"
-    os.makedirs(path, exist_ok=True)  # создаем каталог, если он не существует
-    filename = f"{path}/profiles_farpost_{attribute}.csv"
-    print(filename)
+
     df.to_csv(
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
     )
-    return filename
+    return path
 
 
 def extract_post(soup, **kwargs):
@@ -119,13 +120,12 @@ class ApartmentAttribute:
         self.name_announcement = []
 
 
-
 def scrape_all_profiles(**kwargs):
     """
     Извлекает основную информацию на все объявления.
     :return:
     """
-    ti = kwargs['ti']
+    # ti = kwargs['ti']
     current_url = kwargs['start_url']
     page = kwargs['page']
     filename = ''
@@ -299,7 +299,7 @@ def scrape_all_profiles(**kwargs):
 
         flag = True if page == 1 else False
         df['square'] = df['square'].replace('кв.', 0)
-        filename = write_profiles_to_csv(df, flag)
+        write_profiles_to_csv(df, filename, flag),
         df = df[0:0]
         if page > 1 and page % 50 != 0:
             driver.close()
@@ -314,8 +314,8 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    print(filename)
-    ti.xcom_push(key='filename', value=filename)
+    # print(f'Сохраняем файл: {filename}')
+    # ti.xcom_push(key='filename', value=filename)
 
 
 def load_db(**kwargs):
@@ -324,9 +324,9 @@ def load_db(**kwargs):
     :param path:
     :return:
     """
-    ti = kwargs['ti']
-    filename = ti.xcom_pull(key='filename', task_ids='extract_data')
-    print(filename)
+    # ti = kwargs['ti']
+    # filename = ti.xcom_pull(key='filename', task_ids='extract_data')
+    # print(filename)
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
