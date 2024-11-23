@@ -21,15 +21,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-load_dotenv()
-
-host = 'postgres_data'
-DB_PORT = 5432
-user = 'postgres'
-password = 'postgres'
-database = 'postgres'
-schema_name = 'farpost'
-table_name = 'farpost_staging'
+# load_dotenv()
 
 # host = os.getenv("DB_HOST")
 # database = os.getenv("DB_NAME")
@@ -37,6 +29,14 @@ table_name = 'farpost_staging'
 # table_name = os.getenv("DB_TABLE_NAME")
 # user = os.getenv("DB_USER")
 # password = os.getenv("DB_PASS")
+
+host = Variable.get_variable_from_secrets('HOST')
+db_port = Variable.get_variable_from_secrets('DB_PORT')
+user = Variable.get_variable_from_secrets('USER')
+password = Variable.get_variable_from_secrets('PASSWORD')
+database = Variable.get_variable_from_secrets('DATABASE')
+schema_name = Variable.get_variable_from_secrets('SCHEMA_NAME')
+table_name = Variable.get_variable_from_secrets('TABLE_NAME')
 
 POST_TYPE = ('rent_flats', 'sell_flats')
 user_agents = USER_AGENTS
@@ -53,14 +53,17 @@ param = {
     'page': 1
 }
 
-attribute = datetime.date.today().strftime('%Y_%m_%d')
-path = "/opt/airflow/data"
-os.makedirs(path, exist_ok=True)  # создаем каталог, если он не существует
-filename = f"{path}/profiles_farpost_{attribute}.csv"
 
-def initial():
+def get_path(**kwargs):
+    ti = kwargs['ti']
+    attribute = datetime.date.today().strftime('%Y_%m_%d')
+    path = "/opt/airflow/data"
+    os.makedirs(path, exist_ok=True)
+    filename = f"{path}/profiles_farpost_{attribute}.csv"
+
+    print(f'Сохраняем файл: {filename}')
+    ti.xcom_push(key='filename', value=filename)
     print('RUN')
-
 
 
 def write_profiles_to_csv(df, filename, flag=False):
@@ -69,12 +72,10 @@ def write_profiles_to_csv(df, filename, flag=False):
     :param df, flag:
     :return:
     """
-
     df.to_csv(
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
     )
-    return path
 
 
 def extract_post(soup, **kwargs):
@@ -125,10 +126,10 @@ def scrape_all_profiles(**kwargs):
     Извлекает основную информацию на все объявления.
     :return:
     """
-    # ti = kwargs['ti']
+    ti = kwargs['ti']
+    filename = ti.xcom_pull(key='filename', task_ids='initial')
     current_url = kwargs['start_url']
     page = kwargs['page']
-    filename = ''
 
     remote_webdriver = 'http://remote_chromedriver'
     chrome_options = webdriver.ChromeOptions()
@@ -162,7 +163,7 @@ def scrape_all_profiles(**kwargs):
         soup = BeautifulSoup(response, "html.parser")
         print(f'Страница: {page}')
 
-        if soup.find_all("div", id="map", ):  # проверка на карту
+        if soup.find_all("div", id="map", ):  # проверка на открытую карту
             checkbox = driver.find_element(
                 By.CSS_SELECTOR, '.bzr-toggle input[type="checkbox"]')
             driver.execute_script("arguments[0].click();", checkbox)
@@ -299,7 +300,7 @@ def scrape_all_profiles(**kwargs):
 
         flag = True if page == 1 else False
         df['square'] = df['square'].replace('кв.', 0)
-        write_profiles_to_csv(df, filename, flag),
+        write_profiles_to_csv(df, filename, flag)
         df = df[0:0]
         if page > 1 and page % 50 != 0:
             driver.close()
@@ -314,8 +315,6 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
-    # print(f'Сохраняем файл: {filename}')
-    # ti.xcom_push(key='filename', value=filename)
 
 
 def load_db(**kwargs):
@@ -324,9 +323,8 @@ def load_db(**kwargs):
     :param path:
     :return:
     """
-    # ti = kwargs['ti']
-    # filename = ti.xcom_pull(key='filename', task_ids='extract_data')
-    # print(filename)
+    ti = kwargs['ti']
+    filename = ti.xcom_pull(key='filename', task_ids='initial')
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
@@ -367,9 +365,9 @@ with DAG('farpost_dag',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
-         tags=['farpost', 'etl']
+         tags=['farpost', 'etl', 'sell']
          ) as dag:
-   # with TaskGroup(group_id='push_db') as processing_tasks:
+    # with TaskGroup(group_id='push_db') as processing_tasks:
     extract_data = PythonOperator(
         task_id='extract_data',
         python_callable=scrape_all_profiles,
@@ -382,7 +380,8 @@ with DAG('farpost_dag',
         op_kwargs=param
     )
 
-    initial = PythonOperator(task_id='initial', python_callable=initial)
+    initial = PythonOperator(task_id='initial', python_callable=get_path)
+
     initial >> extract_data >> load_data
 
 if __name__ == "__main__":
