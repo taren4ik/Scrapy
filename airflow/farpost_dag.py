@@ -21,7 +21,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-# load_dotenv()
+#load_dotenv()
 
 # host = os.getenv("DB_HOST")
 # database = os.getenv("DB_NAME")
@@ -38,6 +38,7 @@ database = Variable.get_variable_from_secrets('DATABASE')
 schema_name = Variable.get_variable_from_secrets('SCHEMA_NAME')
 table_name = Variable.get_variable_from_secrets('TABLE_NAME')
 
+
 POST_TYPE = ('rent_flats', 'sell_flats')
 user_agents = USER_AGENTS
 
@@ -53,6 +54,8 @@ param = {
     'page': 1
 }
 
+# ----------------подключение к dwh
+postgres_conn_id = 'pg'
 
 def get_path(**kwargs):
     ti = kwargs['ti']
@@ -367,7 +370,7 @@ with DAG('farpost_dag',
          default_args=args,
          tags=['farpost', 'etl', 'sell']
          ) as dag:
-    # with TaskGroup(group_id='push_db') as processing_tasks:
+   # with TaskGroup(group_id='push_db') as processing_tasks:
     extract_data = PythonOperator(
         task_id='extract_data',
         python_callable=scrape_all_profiles,
@@ -382,7 +385,16 @@ with DAG('farpost_dag',
 
     initial = PythonOperator(task_id='initial', python_callable=get_path)
 
-    initial >> extract_data >> load_data
+    get_procedure = PostgresOperator(
+        task_id='create_db',
+        postgres_conn_id="pg",
+
+        sql="""
+                  CALL insert_update_layer();
+               """,
+    )
+
+    initial >> extract_data >> load_data >> get_procedure
 
 if __name__ == "__main__":
     dag.test()
