@@ -328,6 +328,7 @@ def load_db(**kwargs):
     """
     ti = kwargs['ti']
     filename = ti.xcom_pull(key='filename', task_ids='initial')
+    #filename = '/opt/airflow/data/profiles_farpost_2024_11_11.csv'
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
