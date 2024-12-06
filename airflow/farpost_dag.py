@@ -392,6 +392,7 @@ with DAG('farpost_dag',
 
         sql="""
                   CALL insert_update_layer();
+                  VACUUM FULL;
                """,
     )
 
