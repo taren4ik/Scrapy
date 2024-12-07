@@ -320,6 +320,13 @@ def scrape_all_profiles(**kwargs):
     driver.quit()
 
 
+def get_remove(**kwargs):
+    ti = kwargs['ti']
+    path = ti.xcom_pull(key='filename', task_ids='initial')
+    if os.path.isfile(path):
+        os.remove(path)
+
+
 def load_db(**kwargs):
     """
     Загрузка в stage слой.
@@ -396,7 +403,9 @@ with DAG('farpost_dag',
                """,
     )
 
-    initial >> extract_data >> load_data >> get_procedure
+    clear = PythonOperator(task_id='get_remove', python_callable=get_remove)
+
+    initial >> extract_data >> load_data >> get_remove >> get_procedure
 
 if __name__ == "__main__":
     dag.test()
