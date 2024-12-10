@@ -3,8 +3,6 @@
 
 ![alt text](images/page_1.png)
 ![alt text](images/page_2.png)
-
-
 ![alt text](images/page_3.png)
 
 ### Как запустить проект:

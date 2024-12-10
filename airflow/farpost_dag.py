@@ -1,4 +1,5 @@
 import datetime
+import logging
 import random
 import time
 import os
@@ -124,17 +125,20 @@ class ApartmentAttribute:
         self.name_announcement = []
 
 
-def scrape_all_profiles(**kwargs):
+def scrape_all_profiles(start_url, page):
     """
-    Извлекает основную информацию на все объявления.
+    Извлекает основную информацию на все объявления
     :return:
     """
-    ti = kwargs['ti']
-    filename = ti.xcom_pull(key='filename', task_ids='initial')
-    current_url = kwargs['start_url']
-    page = kwargs['page']
-
-    remote_webdriver = 'http://remote_chromedriver'
+    area = []
+    author = []
+    square = []
+    is_check = []
+    room = []
+    views = []
+    post_id = []
+    type_rental = []
+    current_url = start_url
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(
         "--disable-blink-features=AutomationControlled")
@@ -143,18 +147,17 @@ def scrape_all_profiles(**kwargs):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-browser-side-navigation")
     chrome_options.add_argument("--disable-gpu")
+
     user_agents = USER_AGENTS
     apartament = ApartmentAttribute()
 
     while current_url:
-        if page == 181:
-            return True
+
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(
                 f"user-agent={random.choice(user_agents)}"
             )
-            driver = webdriver.Remote(f'{remote_webdriver}:4444/wd/hub',
-                                      options=chrome_options)
+            driver = webdriver.Chrome(options=chrome_options)
         else:
             driver.execute_script("window.open('', '_blank');")
             # Переключение на новую вкладку (где 1 - вторая вкладка)
@@ -164,12 +167,21 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
-        print(f'Страница: {page}')
 
-        if soup.find_all("div", id="map", ):  # проверка на открытую карту
+        posts = int(soup.find_all("span", id="itemsCount_placeholder")[0][
+            "data-count"])
+
+        page_limit = round(posts / 50 + 1)
+        if page == page_limit:
+            return True
+
+        logging.info(f'Страница: {page}')
+
+        if soup.find_all("div", id="map", ):  # проверка на карту
             checkbox = driver.find_element(
                 By.CSS_SELECTOR, '.bzr-toggle input[type="checkbox"]')
             driver.execute_script("arguments[0].click();", checkbox)
+
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
@@ -200,41 +212,42 @@ def scrape_all_profiles(**kwargs):
 
         for post in full_post[0]:
             if post.find("a")["name"]:
-                apartament.post_id.append(
-                    post.find("a")["name"] if post.find(
-                        "a")["name"][0] != '-' else
-                    post.find("a")["name"][1:])
+                post_id.append(post.find("a")["name"] if post.find("a")[
+                                                             "name"][
+                                                             0] != '-' else
+                               post.find("a")["name"][1:])
             else:
-                apartament.post_id.append(
-                    post.parent.a["name"] if post.parent.a["name"][0] != '-'
-                    else post.parent.a["name"][1:])
+                post_id.append(post.parent.a["name"] if post.parent.a[
+                                                            "name"][
+                                                            0] != '-' else
+                               post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
-                apartament.is_check.append("True")
+                is_check.append("True")
             else:
-                apartament.is_check.append("False")
+                is_check.append("False")
 
             if post.find("span", class_="views nano-eye-text"):
-                apartament.views.append(
+                views.append(
                     post.find("span", class_="views nano-eye-text").text
                 )
             else:
-                apartament.views.append("0")
+                views.append("0")
 
-        apartament.profile_links = [
+        profile_links = [
             a["href"]
             for a in soup.find_all(
-                "a", class_="bulletinLink bull-item__self-link auto-shy"
-            )
+                "a", class_="bulletinLink bull-item__self-link auto-shy")
+
         ]
-        apartament.name_announcement = [
+        name_announcement = [
             a.text
             for a in soup.find_all(
                 "a", class_="bulletinLink bull-item__self-link auto-shy"
             )
         ]
-        for value in apartament.name_announcement:
-            apartament.room.append(
+        for value in name_announcement:
+            room.append(
                 value[0]
                 if value[0].isdigit() or value.startswith(
                     "Гостинка") or value.startswith("Комната")
@@ -250,60 +263,73 @@ def scrape_all_profiles(**kwargs):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
+            if 'аренда' in value.split(",")[-1]:
+                type_rental.append(value.split(",")[-1])
+            else:
+                type_rental.append('None')
 
             if value.split(",")[0] == "64":
-                apartament.area.append("64," + value.split(",")[1])
-                apartament.author.append(value.split(",")[2])
+                area.append("64," + value.split(",")[1])
+                author.append(value.split(",")[2])
             else:
-                apartament.area.append(value.split(",")[0])
-                apartament.author.append(value.split(",")[1])
+                area.append(value.split(",")[0])
+                author.append(value.split(",")[1])
 
-            if value.split()[-1] == 'этаж':
-                apartament.square.append(value.split()[-5])
+            if 'кв.' in value:
+                if value.split()[-3] == 'этаж,':
+                    square.append(value.split()[-7])
+                else:
+                    square.append(
+                        value.split(",")[-3] + "," + value.split(",")[-2][0]
 
-            elif value.split()[-2] == 'доля':
-                apartament.square.append(
-                    value.split(",")[-3] + ',' + value.split(",")[-2][0]
-                )
+                        if len(value.split(",")) > 2
+                        else 0
+                    )
             else:
-                apartament.square.append(
-                    value.split(",")[-2] + "," + value.split(",")[-1][0]
+                square.append(None)
 
-                    if len(value.split(",")) > 2
-                    else 0
-                )
-        print(
-            f"Пост {len(apartament.post_id)}  {len(apartament.name_announcement)} "
-            f"url: {len(apartament.profile_links)} комнат: "
-            f"{len(apartament.room)}"
-            f" {len(apartament.is_check)}")
+        logging.info(f"Постов {len(post_id)}  {len(name_announcement)} "
+              f"url: {len(profile_links)} комнат: {len(room)} "
+              f"аквтивное: {len(is_check)}")
 
         df = pd.DataFrame(
             {
-                "id": apartament.post_id,
-                "text": apartament.name_announcement,
+                "id": post_id,
+                "text": name_announcement,
                 "area": "None",
-                "link": apartament.profile_links,
-                "view": apartament.views,
+                "link": profile_links,
+                "view": views,
                 "cost": "None",
-                "room": apartament.room,
-                "is_check": apartament.is_check,
+                "room": room,
+                "is_check": is_check,
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
-                "type_post": "sell"
             }
         )
         for i, row in enumerate(
                 np.where(df["is_check"] == "True")[0].tolist()):
             df.loc[row, "cost"] = cost[i]
-            df.loc[row, "area"] = apartament.area[i]
-            df.loc[row, "square"] = apartament.square[i]
-            df.loc[row, "author"] = apartament.author[i]
+            df.loc[row, "area"] = area[i]
+            df.loc[row, "square"] = square[i]
+            df.loc[row, "author"] = author[i]
+
+        for i, row in enumerate(
+                np.where(df["link"] == "javascript:void(0)")[0].tolist()):
+            df.loc[row, "is_check"] = False
+            df.loc[row, "link"] = None
+
 
         flag = True if page == 1 else False
-        df['square'] = df['square'].replace('кв.', 0)
-        write_profiles_to_csv(df, filename, flag)
+        write_profiles_to_csv(df, flag)
+        logging.info('Файл записан')
+        # df.to_sql(
+        #     table_name,
+        #     engine,
+        #     schema=schema_name,
+        #     if_exists='append',
+        #     index=False
+        # )
         df = df[0:0]
         if page > 1 and page % 50 != 0:
             driver.close()
@@ -394,7 +420,7 @@ with DAG('farpost_dag',
     initial = PythonOperator(task_id='initial', python_callable=get_path)
 
     get_procedure = PostgresOperator(
-        task_id='create_db',
+        task_id='get_procedure',
         postgres_conn_id="pg",
 
         sql="""
@@ -403,7 +429,7 @@ with DAG('farpost_dag',
                """,
     )
 
-    clear = PythonOperator(task_id='get_remove', python_callable=get_remove)
+    get_remove = PythonOperator(task_id='get_remove', python_callable=get_remove)
 
     initial >> extract_data >> load_data >> get_remove >> get_procedure
 
