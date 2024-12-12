@@ -40,10 +40,10 @@ schema_name = Variable.get_variable_from_secrets('SCHEMA_NAME')
 table_name = Variable.get_variable_from_secrets('TABLE_NAME')
 
 
-POST_TYPE = ('rent_flats', 'sell_flats')
+
 user_agents = USER_AGENTS
 
-URL = f"https://www.farpost.ru/vladivostok/realty/sell_flats"
+URL = f"https://www.farpost.ru/vladivostok/realty/rent_flats"
 
 args = {
     'owner': 'dimon',
@@ -58,12 +58,13 @@ param = {
 # ----------------подключение к dwh
 postgres_conn_id = 'pg'
 
+
 def get_path(**kwargs):
     ti = kwargs['ti']
     attribute = datetime.date.today().strftime('%Y_%m_%d')
     path = "/opt/airflow/data"
     os.makedirs(path, exist_ok=True)
-    filename = f"{path}/profiles_farpost_{attribute}.csv"
+    filename = f"{path}/profiles_farpost_rent_{attribute}.csv"
 
     print(f'Сохраняем файл: {filename}')
     ti.xcom_push(key='filename', value=filename)
