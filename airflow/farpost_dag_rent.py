@@ -314,6 +314,8 @@ def scrape_all_profiles(**kwargs):
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
+                "type_rental":  apartament.type_rental,
+
             }
         )
         for i, row in enumerate(
