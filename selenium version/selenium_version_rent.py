@@ -225,30 +225,36 @@ def scrape_all_profiles(start_url, page):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-            if 'аренда' in value.split(",")[-1]:
-                type_rental.append(value.split(",")[-1])
-            else:
+            if len(value.split(",")) < 2:
                 type_rental.append('None')
-
-            if value.split(",")[0] == "64":
-                area.append("64," + value.split(",")[1])
-                author.append(value.split(",")[2])
+                area.append('None')
+                author.append(value.split(",")[0])
+                square.append('None')
             else:
-                area.append(value.split(",")[0])
-                author.append(value.split(",")[1])
-
-            if 'кв.' in value:
-                if value.split()[-3] == 'этаж,':
-                    square.append(value.split()[-7])
+                if 'аренда' in value.split(",")[-1]:
+                    type_rental.append(value.split(",")[-1])
                 else:
-                    square.append(
-                        value.split(",")[-3] + "," + value.split(",")[-2][0]
+                    type_rental.append('None')
 
-                        if len(value.split(",")) > 2
-                        else 0
-                    )
-            else:
-                square.append(None)
+                if value.split(",")[0] == "64":
+                    area.append("64," + value.split(",")[1])
+                    author.append(value.split(",")[2])
+                else:
+                    area.append(value.split(",")[0])
+                    author.append(value.split(",")[1])
+
+                if 'кв.' in value:
+                    if value.split()[-3] == 'этаж,':
+                        square.append(value.split()[-7])
+                    else:
+                        square.append(
+                            value.split(",")[-3] + "," + value.split(",")[-2][0]
+
+                            if len(value.split(",")) > 2
+                            else 0
+                        )
+                else:
+                    square.append(None)
 
         logging.info(f"Постов {len(post_id)}  {len(name_announcement)} "
               f"url: {len(profile_links)} комнат: {len(room)} "
@@ -267,6 +273,7 @@ def scrape_all_profiles(start_url, page):
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
+                "type_rental": type_rental,
             }
         )
         for i, row in enumerate(

@@ -265,30 +265,36 @@ def scrape_all_profiles(**kwargs):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-            if 'аренда' in value.split(",")[-1]:
-                apartament.type_rental.append(value.split(",")[-1])
-            else:
+            if len(value.split(",")) < 2:
                 apartament.type_rental.append('None')
-
-            if value.split(",")[0] == "64":
-                apartament.area.append("64," + value.split(",")[1])
-                apartament.author.append(value.split(",")[2])
+                apartament.area.append('None')
+                apartament.author.append(value.split(",")[0])
+                apartament.square.append('None')
             else:
-                apartament.area.append(value.split(",")[0])
-                apartament.author.append(value.split(",")[1])
-
-            if 'кв.' in value:
-                if value.split()[-3] == 'этаж,':
-                    apartament.square.append(value.split()[-7])
+                if 'аренда' in value.split(",")[-1]:
+                    apartament.type_rental.append(value.split(",")[-1])
                 else:
-                    apartament.square.append(
-                        value.split(",")[-3] + "," + value.split(",")[-2][0]
+                    apartament.type_rental.append('None')
 
-                        if len(value.split(",")) > 2
-                        else 0
-                    )
-            else:
-                apartament.square.append(None)
+                if value.split(",")[0] == "64":
+                    apartament.area.append("64," + value.split(",")[1])
+                    apartament.author.append(value.split(",")[2])
+                else:
+                    apartament.area.append(value.split(",")[0])
+                    apartament.author.append(value.split(",")[1])
+
+                if 'кв.' in value:
+                    if value.split()[-3] == 'этаж,':
+                        apartament.square.append(value.split()[-7])
+                    else:
+                        apartament.square.append(
+                            value.split(",")[-3] + "," + value.split(",")[-2][0]
+
+                            if len(value.split(",")) > 2
+                            else 0
+                        )
+                else:
+                    apartament.square.append(None)
 
         logging.info(f"Постов {len(apartament.post_id)}  {len(apartament.name_announcement)} "
               f"url: {len(apartament.profile_links)} комнат: {len(apartament.room)} "
@@ -395,7 +401,7 @@ def load_db(**kwargs):
 
 with DAG('farpost_dag_rent',
          description='select and transform data',
-         schedule_interval='0 */2 * * *',
+         schedule_interval='0 */24 * * *',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
@@ -429,7 +435,6 @@ with DAG('farpost_dag_rent',
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-
     initial >> extract_data >> load_data >> get_remove >> get_procedure
 
 
