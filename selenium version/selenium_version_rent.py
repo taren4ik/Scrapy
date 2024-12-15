@@ -273,6 +273,7 @@ def scrape_all_profiles(start_url, page):
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
+                "type_post": "rent",
                 "type_rental": type_rental,
             }
         )

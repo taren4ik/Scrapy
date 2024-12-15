@@ -51,7 +51,7 @@ args = {
 }
 
 param = {
-    'start_url': 'https://www.farpost.ru/vladivostok/realty/sell_flats/',
+    'start_url': 'https://www.farpost.ru/vladivostok/realty/rent_flats/',
     'page': 1
 }
 
@@ -298,7 +298,9 @@ def scrape_all_profiles(**kwargs):
 
         logging.info(f"Постов {len(apartament.post_id)}  {len(apartament.name_announcement)} "
               f"url: {len(apartament.profile_links)} комнат: {len(apartament.room)} "
-              f"аквтивное: {len(apartament.is_check)}")
+              f"аквтивных : {len(apartament.is_check)}" )
+
+
 
         df = pd.DataFrame(
             {
@@ -314,16 +316,18 @@ def scrape_all_profiles(**kwargs):
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
-                "type_rental":  apartament.type_rental,
+                "type_rental": "None",
 
             }
         )
+        logging.info(df)
         for i, row in enumerate(
                 np.where(df["is_check"] == "True")[0].tolist()):
             df.loc[row, "cost"] = cost[i]
             df.loc[row, "area"] = apartament.area[i]
             df.loc[row, "square"] = apartament.square[i]
             df.loc[row, "author"] = apartament.author[i]
+            df.loc[row, "type_rental"] = apartament.type_rental
 
         for i, row in enumerate(
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):
@@ -430,7 +434,6 @@ with DAG('farpost_dag_rent',
 
         sql="""
                   CALL insert_update_layer();
-                  VACUUM FULL;
                """,
     )
 
