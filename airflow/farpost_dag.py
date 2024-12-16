@@ -373,7 +373,7 @@ def load_db(**kwargs):
 
 with DAG('farpost_dag_sell',
          description='select and transform data',
-         schedule_interval='0 */2 * * *',
+         schedule_interval='0 */24 * * *',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
