@@ -373,7 +373,7 @@ def load_db(**kwargs):
 
 with DAG('farpost_dag_sell',
          description='select and transform data',
-         schedule_interval='0 */24 * * *',
+         schedule_interval='0 */2 * * *',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
@@ -395,7 +395,7 @@ with DAG('farpost_dag_sell',
     initial = PythonOperator(task_id='initial', python_callable=get_path)
 
     get_procedure = PostgresOperator(
-        task_id='create_db',
+        task_id='get_procedure',
         postgres_conn_id="pg",
 
         sql="""
