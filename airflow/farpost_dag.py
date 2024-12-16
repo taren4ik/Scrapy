@@ -292,7 +292,8 @@ def scrape_all_profiles(**kwargs):
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
-                "type_post": "sell"
+                "type_post": "sell",
+                "type_rental": "None",
             }
         )
         for i, row in enumerate(
