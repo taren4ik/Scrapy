@@ -369,8 +369,8 @@ def load_db(**kwargs):
     :return:
     """
     ti = kwargs['ti']
-    #filename = ti.xcom_pull(key='filename', task_ids='initial')
-    filename = '/opt/airflow/data/profiles_farpost_2024_12_17_rent.csv'
+    filename = ti.xcom_pull(key='filename', task_ids='initial')
+    #filename = '/opt/airflow/data/profiles_farpost_rent_2024_12_12.csv'
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
@@ -441,8 +441,7 @@ with DAG('farpost_dag_rent',
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-    #initial >> extract_data >> load_data >> get_remove >> get_procedure
-    initial >> load_data >> get_remove >> get_procedure
+    initial >> extract_data >> load_data >> get_remove >> get_procedure
 
 
 if __name__ == "__main__":
