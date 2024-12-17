@@ -316,7 +316,7 @@ def scrape_all_profiles(**kwargs):
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
-                "type_rental": "None",
+                "type_rental": apartament.type_rental,
 
             }
         )
@@ -327,7 +327,7 @@ def scrape_all_profiles(**kwargs):
             df.loc[row, "area"] = apartament.area[i]
             df.loc[row, "square"] = apartament.square[i]
             df.loc[row, "author"] = apartament.author[i]
-            df.loc[row, "type_rental"] = apartament.type_rental
+
 
         for i, row in enumerate(
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):
@@ -369,8 +369,8 @@ def load_db(**kwargs):
     :return:
     """
     ti = kwargs['ti']
-    filename = ti.xcom_pull(key='filename', task_ids='initial')
-    #filename = '/opt/airflow/data/profiles_farpost_2024_12_12_rent.csv'
+    #filename = ti.xcom_pull(key='filename', task_ids='initial')
+    filename = '/opt/airflow/data/profiles_farpost_2024_12_17_rent.csv'
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
@@ -434,13 +434,15 @@ with DAG('farpost_dag_rent',
 
         sql="""
                   CALL insert_update_layer();
+                  VACUUM FULL;
                """,
     )
 
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-    initial >> extract_data >> load_data >> get_remove >> get_procedure
+    #initial >> extract_data >> load_data >> get_remove >> get_procedure
+    initial >> load_data >> get_remove >> get_procedure
 
 
 if __name__ == "__main__":
