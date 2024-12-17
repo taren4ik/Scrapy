@@ -22,7 +22,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-#load_dotenv()
+# load_dotenv()
 
 # host = os.getenv("DB_HOST")
 # database = os.getenv("DB_NAME")
@@ -38,8 +38,6 @@ password = Variable.get_variable_from_secrets('PASSWORD')
 database = Variable.get_variable_from_secrets('DATABASE')
 schema_name = Variable.get_variable_from_secrets('SCHEMA_NAME')
 table_name = Variable.get_variable_from_secrets('TABLE_NAME')
-
-
 
 user_agents = USER_AGENTS
 
@@ -169,7 +167,7 @@ def scrape_all_profiles(**kwargs):
         soup = BeautifulSoup(response, "html.parser")
 
         posts = int(soup.find_all("span", id="itemsCount_placeholder")[0][
-            "data-count"])
+                        "data-count"])
 
         page_limit = round(posts / 50 + 1)
         if page == page_limit:
@@ -214,15 +212,15 @@ def scrape_all_profiles(**kwargs):
             if post.find("a")["name"]:
                 apartament.post_id.append(post.find("a")["name"] if
                                           post.find("a")[
-                                                             "name"][
-                                                             0] != '-' else
-                               post.find("a")["name"][1:])
+                                              "name"][
+                                              0] != '-' else
+                                          post.find("a")["name"][1:])
             else:
                 apartament.post_id.append(post.parent.a["name"] if
                                           post.parent.a[
-                                                            "name"][
-                                                            0] != '-' else
-                               post.parent.a["name"][1:])
+                                              "name"][
+                                              0] != '-' else
+                                          post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
                 apartament.is_check.append("True")
@@ -288,7 +286,8 @@ def scrape_all_profiles(**kwargs):
                         apartament.square.append(value.split()[-7])
                     else:
                         apartament.square.append(
-                            value.split(",")[-3] + "," + value.split(",")[-2][0]
+                            value.split(",")[-3] + "," + value.split(",")[-2][
+                                0]
 
                             if len(value.split(",")) > 2
                             else 0
@@ -296,11 +295,10 @@ def scrape_all_profiles(**kwargs):
                 else:
                     apartament.square.append(None)
 
-        logging.info(f"Постов {len(apartament.post_id)}  {len(apartament.name_announcement)} "
-              f"url: {len(apartament.profile_links)} комнат: {len(apartament.room)} "
-              f"аквтивных : {len(apartament.is_check)}" )
-
-
+        logging.info(
+            f"Постов {len(apartament.post_id)}  {len(apartament.name_announcement)} "
+            f"url: {len(apartament.profile_links)} комнат: {len(apartament.room)} "
+            f"аквтивных : {len(apartament.is_check)}")
 
         df = pd.DataFrame(
             {
@@ -328,12 +326,10 @@ def scrape_all_profiles(**kwargs):
             df.loc[row, "square"] = apartament.square[i]
             df.loc[row, "author"] = apartament.author[i]
 
-
         for i, row in enumerate(
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):
             df.loc[row, "is_check"] = False
             df.loc[row, "link"] = None
-
 
         flag = True if page == 1 else False
         write_profiles_to_csv(df, filename, flag)
@@ -370,7 +366,7 @@ def load_db(**kwargs):
     """
     ti = kwargs['ti']
     filename = ti.xcom_pull(key='filename', task_ids='initial')
-    #filename = '/opt/airflow/data/profiles_farpost_rent_2024_12_12.csv'
+    # filename = '/opt/airflow/data/profiles_farpost_rent_2024_12_12.csv'
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
@@ -413,7 +409,7 @@ with DAG('farpost_dag_rent',
          default_args=args,
          tags=['farpost', 'etl', 'rent']
          ) as dag:
-   # with TaskGroup(group_id='push_db') as processing_tasks:
+    # with TaskGroup(group_id='push_db') as processing_tasks:
     extract_data = PythonOperator(
         task_id='extract_data',
         python_callable=scrape_all_profiles,
@@ -438,11 +434,23 @@ with DAG('farpost_dag_rent',
                """,
     )
 
+    get_clean = PostgresOperator(
+        task_id='get_clean',
+        postgres_conn_id="pg",
+
+        sql="""
+             update farpost_staging
+                set
+                    square = NULL
+                where length(square) > 5;
+            """,
+    )
+
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-    initial >> extract_data >> load_data >> get_remove >> get_procedure
-
+    initial >> extract_data >> load_data >> get_remove >> get_clean >>
+get_procedure
 
 if __name__ == "__main__":
     dag.test()
