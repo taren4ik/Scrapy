@@ -463,6 +463,5 @@ with DAG('farpost_dag_rent',
                                 )
     initial >> extract_data >> load_data >> get_remove >> get_clean >> get_procedure >> garbage_collection
 
-
 if __name__ == "__main__":
     dag.test()
