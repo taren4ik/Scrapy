@@ -430,7 +430,7 @@ with DAG('farpost_dag_rent',
         postgres_conn_id="pg",
 
         sql="""
-                  CALL insert_update_layer_rent();
+                  CALL farpost.insert_update_layer_rent();
                """,
     )
 
@@ -462,6 +462,7 @@ with DAG('farpost_dag_rent',
                                 python_callable=get_remove
                                 )
     initial >> extract_data >> load_data >> get_remove >> get_clean >> get_procedure >> garbage_collection
+
 
 if __name__ == "__main__":
     dag.test()
