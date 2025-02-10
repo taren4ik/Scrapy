@@ -58,13 +58,14 @@ postgres_conn_id = 'pg'
 
 def get_path(**kwargs):
     ti = kwargs['ti']
-    attribute = datetime.date.today().strftime('%Y_%m_%d')
+    date_now = datetime.date.today().strftime('%Y_%m_%d')
     path = "/opt/airflow/data"
     os.makedirs(path, exist_ok=True)
-    filename = f"{path}/profiles_farpost_rent_{attribute}.csv"
+    filename = f"{path}/profiles_farpost_rent_{date_now}.csv"
 
     print(f'Сохраняем файл: {filename}')
     ti.xcom_push(key='filename', value=filename)
+    ti.xcom_push(key="date_now", value=date_now)
     print('RUN')
 
 
@@ -367,7 +368,8 @@ def load_db(**kwargs):
     """
     ti = kwargs['ti']
     filename = ti.xcom_pull(key='filename', task_ids='initial')
-    #filename = '/opt/airflow/data/profiles_farpost_rent_2024_12_12.csv'
+    date_now = ti.xcom_pull(key='date_now', task_ids='initial')
+    #filename = f'/opt/airflow/data/profiles_farpost_rent_{date_now}.csv'
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )

@@ -1,4 +1,5 @@
 import datetime
+import logging
 import random
 import time
 import os
@@ -36,10 +37,10 @@ schema_name = Variable.get_variable_from_secrets('SCHEMA_NAME')
 table_name = Variable.get_variable_from_secrets('TABLE_NAME')
 
 
-POST_TYPE = ('rent_flats', 'sell_flats')
+
 user_agents = USER_AGENTS
 
-URL = f"https://www.farpost.ru/vladivostok/realty/sell_flats"
+URL = f"https://www.farpost.ru/vladivostok/realty/rent-apartment"
 
 args = {
     'owner': 'dimon',
@@ -47,7 +48,7 @@ args = {
 }
 
 param = {
-    'start_url': 'https://www.farpost.ru/vladivostok/realty/sell_flats/',
+    'start_url': 'https://www.farpost.ru/vladivostok/realty/rent-apartment/',
     'page': 1
 }
 
@@ -60,7 +61,7 @@ def get_path(**kwargs):
     date_now = datetime.date.today().strftime('%Y_%m_%d')
     path = "/opt/airflow/data"
     os.makedirs(path, exist_ok=True)
-    filename = f"{path}/profiles_farpost_{date_now}.csv"
+    filename = f"{path}/profiles_farpost_short_rent_{date_now}.csv"
 
     print(f'Сохраняем файл: {filename}')
     ti.xcom_push(key='filename', value=filename)
@@ -110,6 +111,7 @@ class ApartmentAttribute:
         self.post_id = []
         self.profile_links = []
         self.name_announcement = []
+        self.type_rental = []
 
     def clean_attribute(self):
         self.area = []
@@ -121,11 +123,12 @@ class ApartmentAttribute:
         self.post_id = []
         self.profile_links = []
         self.name_announcement = []
+        self.type_rental = []
 
 
 def scrape_all_profiles(**kwargs):
     """
-    Извлекает основную информацию на все объявления.
+    Извлекает основную информацию на все объявления
     :return:
     """
     ti = kwargs['ti']
@@ -146,8 +149,7 @@ def scrape_all_profiles(**kwargs):
     apartament = ApartmentAttribute()
 
     while current_url:
-        if page == 181:
-            return True
+
         if page == 1 or page % 50 == 0:
             chrome_options.add_argument(
                 f"user-agent={random.choice(user_agents)}"
@@ -163,12 +165,21 @@ def scrape_all_profiles(**kwargs):
         time.sleep(random.uniform(3, 8))
         response = driver.page_source
         soup = BeautifulSoup(response, "html.parser")
-        print(f'Страница: {page}')
 
-        if soup.find_all("div", id="map", ):  # проверка на открытую карту
+        posts = int(soup.find_all("span", id="itemsCount_placeholder")[0][
+            "data-count"])
+
+        page_limit = round(posts / 50 + 1)
+        if page == page_limit:
+            return True
+
+        logging.info(f'Страница: {page}')
+
+        if soup.find_all("div", id="map", ):  # проверка на карту
             checkbox = driver.find_element(
                 By.CSS_SELECTOR, '.bzr-toggle input[type="checkbox"]')
             driver.execute_script("arguments[0].click();", checkbox)
+
             time.sleep(random.uniform(3, 9))
             response = driver.page_source
             soup = BeautifulSoup(response, "html.parser")
@@ -199,14 +210,17 @@ def scrape_all_profiles(**kwargs):
 
         for post in full_post[0]:
             if post.find("a")["name"]:
-                apartament.post_id.append(
-                    post.find("a")["name"] if post.find(
-                        "a")["name"][0] != '-' else
-                    post.find("a")["name"][1:])
+                apartament.post_id.append(post.find("a")["name"] if
+                                          post.find("a")[
+                                                             "name"][
+                                                             0] != '-' else
+                               post.find("a")["name"][1:])
             else:
-                apartament.post_id.append(
-                    post.parent.a["name"] if post.parent.a["name"][0] != '-'
-                    else post.parent.a["name"][1:])
+                apartament.post_id.append(post.parent.a["name"] if
+                                          post.parent.a[
+                                                            "name"][
+                                                            0] != '-' else
+                               post.parent.a["name"][1:])
 
             if post.find("div", class_="price-block__price"):
                 apartament.is_check.append("True")
@@ -223,8 +237,8 @@ def scrape_all_profiles(**kwargs):
         apartament.profile_links = [
             a["href"]
             for a in soup.find_all(
-                "a", class_="bulletinLink bull-item__self-link auto-shy"
-            )
+                "a", class_="bulletinLink bull-item__self-link auto-shy")
+
         ]
         apartament.name_announcement = [
             a.text
@@ -249,33 +263,42 @@ def scrape_all_profiles(**kwargs):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-
-            if value.split(",")[0] == "64":
-                apartament.area.append("64," + value.split(",")[1])
-                apartament.author.append(value.split(",")[2])
+            if len(value.split(",")) < 2:
+                apartament.type_rental.append('None')
+                apartament.area.append('None')
+                apartament.author.append(value.split(",")[0])
+                apartament.square.append('None')
             else:
-                apartament.area.append(value.split(",")[0])
-                apartament.author.append(value.split(",")[1])
+                # if 'аренда' in value.split(",")[-1]:
+                #     apartament.type_rental.append(value.split(",")[-1])
+                # else:
+                #     apartament.type_rental.append('None')
 
-            if value.split()[-1] == 'этаж':
-                apartament.square.append(value.split()[-5])
+                if value.split(",")[0] == "64":
+                    apartament.area.append("64," + value.split(",")[1])
+                    apartament.author.append(value.split(",")[2])
+                else:
+                    apartament.area.append(value.split(",")[0])
+                    apartament.author.append(value.split(",")[1])
 
-            elif value.split()[-2] == 'доля':
-                apartament.square.append(
-                    value.split(",")[-3] + ',' + value.split(",")[-2][0]
-                )
-            else:
-                apartament.square.append(
-                    value.split(",")[-2] + "," + value.split(",")[-1][0]
+                if 'кв.' in value:
+                    if value.split()[-3] == 'этаж,':
+                        apartament.square.append(value.split()[-7])
+                    else:
+                        apartament.square.append(
+                            value.split(",")[-3] + "," + value.split(",")[-2][0]
 
-                    if len(value.split(",")) > 2
-                    else 0
-                )
-        print(
-            f"Пост {len(apartament.post_id)}  {len(apartament.name_announcement)} "
-            f"url: {len(apartament.profile_links)} комнат: "
-            f"{len(apartament.room)}"
-            f" {len(apartament.is_check)}")
+                            if len(value.split(",")) > 2
+                            else 0
+                        )
+                else:
+                    apartament.square.append(None)
+
+        logging.info(f"Постов {len(apartament.post_id)}  {len(apartament.name_announcement)} "
+              f"url: {len(apartament.profile_links)} комнат: {len(apartament.room)} "
+              f"аквтивных : {len(apartament.is_check)}" )
+
+
 
         df = pd.DataFrame(
             {
@@ -290,10 +313,12 @@ def scrape_all_profiles(**kwargs):
                 "square": "None",
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
-                "type_post": "sell",
-                "type_rental": "None",
+                "type_post": "rent",
+                "type_rental": "суточная аренда",
+
             }
         )
+        logging.info(df)
         for i, row in enumerate(
                 np.where(df["is_check"] == "True")[0].tolist()):
             df.loc[row, "cost"] = cost[i]
@@ -301,9 +326,17 @@ def scrape_all_profiles(**kwargs):
             df.loc[row, "square"] = apartament.square[i]
             df.loc[row, "author"] = apartament.author[i]
 
+
+        for i, row in enumerate(
+                np.where(df["link"] == "javascript:void(0)")[0].tolist()):
+            df.loc[row, "is_check"] = False
+            df.loc[row, "link"] = None
+
+
         flag = True if page == 1 else False
-        df['square'] = df['square'].replace('кв.', 0)
         write_profiles_to_csv(df, filename, flag)
+        logging.info('Файл записан')
+
         df = df[0:0]
         if page > 1 and page % 50 != 0:
             driver.close()
@@ -336,7 +369,7 @@ def load_db(**kwargs):
     ti = kwargs['ti']
     filename = ti.xcom_pull(key='filename', task_ids='initial')
     date_now = ti.xcom_pull(key='date_now', task_ids='initial')
-    #filename = f'/opt/airflow/data/profiles_farpost_rent_{date_now}.csv
+    #filename = f'/opt/airflow/data/profiles_farpost_rent_{date_now}.csv'
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"
     )
@@ -371,13 +404,13 @@ def load_db(**kwargs):
         )
 
 
-with DAG('farpost_dag_sell',
+with DAG('farpost_dag_short_rent',
          description='select and transform data',
          schedule_interval='0 */24 * * *',
          catchup=False,
          start_date=datetime.datetime(2024, 10, 21),
          default_args=args,
-         tags=['farpost', 'etl', 'sell']
+         tags=['farpost', 'etl', 'rent']
          ) as dag:
    # with TaskGroup(group_id='push_db') as processing_tasks:
     extract_data = PythonOperator(
@@ -399,13 +432,39 @@ with DAG('farpost_dag_sell',
         postgres_conn_id="pg",
 
         sql="""
-                  CALL insert_update_layer();
+                  CALL farpost.insert_update_layer_rent();
                """,
     )
 
-    get_remove = PythonOperator(task_id='get_remove', python_callable=get_remove)
+    garbage_collection = PostgresOperator(
+        task_id='garbage_collection',
+        postgres_conn_id="pg",
 
-    initial >> extract_data >> load_data >> get_remove >> get_procedure
+        sql="""
+                     VACUUM FULL;
+                  """,
+    )
+
+    get_clean = PostgresOperator(
+        task_id='get_clean',
+        postgres_conn_id="pg",
+
+        sql="""
+             update farpost.farpost_staging
+                set
+                    square = NULL
+                where length(square) > 5;
+            """,
+    )
+
+
+
+
+    get_remove = PythonOperator(task_id='get_remove',
+                                python_callable=get_remove
+                                )
+    initial >> extract_data >>load_data >> get_remove >> get_clean >> get_procedure >> garbage_collection
+
 
 if __name__ == "__main__":
     dag.test()
