@@ -263,20 +263,19 @@ def scrape_all_profiles(**kwargs):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-            if len(value.split(",")) <= 2:
+            if len(value.split(",")) < 2:
                 apartament.type_rental.append('None')
                 apartament.area.append('None')
                 apartament.author.append(value.split(",")[0])
                 apartament.square.append('None')
             else:
-                # if 'аренда' in value.split(",")[-1]:
-                #     apartament.type_rental.append(value.split(",")[-1])
-                # else:
-                #     apartament.type_rental.append('None')
 
                 if value.split(",")[0] == "64":
                     apartament.area.append("64," + value.split(",")[1])
-                    apartament.author.append(value.split(",")[2])
+                    if len(value.split(",")) == 2:
+                        apartament.author.append('None')
+                    else:
+                        apartament.author.append(value.split(",")[2])
                 else:
                     apartament.area.append(value.split(",")[0])
                     apartament.author.append(value.split(",")[1])
