@@ -225,16 +225,12 @@ def scrape_all_profiles(start_url, page):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-            if len(value.split(",")) < 2:
+            if len(value.split(",")) <= 2:
                 type_rental.append('None')
                 area.append('None')
                 author.append(value.split(",")[0])
                 square.append('None')
             else:
-                if 'аренда' in value.split(",")[-1]:
-                    type_rental.append(value.split(",")[-1])
-                else:
-                    type_rental.append('None')
 
                 if value.split(",")[0] == "64":
                     area.append("64," + value.split(",")[1])
@@ -274,7 +270,7 @@ def scrape_all_profiles(start_url, page):
                 "author": "None",
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
-                "type_rental": type_rental,
+                "type_rental": "суточная",
             }
         )
         for i, row in enumerate(

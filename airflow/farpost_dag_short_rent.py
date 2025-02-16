@@ -263,7 +263,7 @@ def scrape_all_profiles(**kwargs):
                 "div", class_="bull-item__annotation-row")
         ]
         for value in district:
-            if len(value.split(",")) < 2:
+            if len(value.split(",")) <= 2:
                 apartament.type_rental.append('None')
                 apartament.area.append('None')
                 apartament.author.append(value.split(",")[0])
