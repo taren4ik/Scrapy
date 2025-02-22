@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Annotated
 from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import delete, func, insert, select, update, text
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, \
     AsyncSession
@@ -76,7 +76,7 @@ app = FastAPI()
 
 class RoomShema(BaseModel):
     room: str
-    square: float | None = None
+    area: str
 
 
 class BookAddShema(BaseModel):
@@ -111,11 +111,25 @@ async def get_flat(session: SessionDep):
     return result.scalars().all()
 
 
-
-@app.post("/sale_flat/")
-async def create_item(data: RoomShema):
+@app.post("/flat_sale/")
+async def get_sale_flat(data: RoomShema, session: AsyncSession = Depends(
+    get_session)):
     room = data.room
-    square = data.square
+    area = data.area
+    query = text(f"SELECT cost, concat('farpost.ru',link)  as link FROM "
+                 f"farpost.s1 WHERE room = '{room}'and "
+                 f"area='{area}' ORDER BY cost desc limit 5")
+    result = await session.execute(query)
 
-    return {"Выгрузка для ": f"{room}- комнатных квартир, площадью -"
-                             f" {square}"}
+    # Преобразуем результат в список словарей
+    flats = [dict(row) for row in result.mappings()]
+
+    return flats
+
+# @app.post("/sale_flat/")
+# async def create_item(data: RoomShema):
+#     room = data.room
+#     square = data.square
+#
+#     return {"Выгрузка для ": f"{room}- комнатных квартир, площадью -"
+#                              f" {square}"}
