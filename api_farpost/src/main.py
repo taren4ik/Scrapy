@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from typing import Annotated
@@ -45,6 +46,31 @@ class BookModel(Base):
     author: Mapped[str]
 
 
+class FlatModel(Base):
+    __tablename__ = "s1"
+    __table_args__ = {"schema": "farpost"}  # Указываем схему "farpost"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    text: Mapped[str]
+    area: Mapped[str]
+    link: Mapped[str]
+    view: Mapped[int]
+    cost: Mapped[float]
+    room: Mapped[str]
+    is_check: Mapped[bool]
+    square: Mapped[float]
+    author: Mapped[str]
+    view_first: Mapped[int]
+    delta_view: Mapped[int]
+    is_blocked: Mapped[bool]
+    date_from: Mapped[datetime]
+    batch_date: Mapped[datetime]
+    date_delete: Mapped[datetime]
+    delta_cost: Mapped[float]
+    type_post: Mapped[str]
+    type_rental: Mapped[str]
+
+
 app = FastAPI()
 
 
@@ -76,6 +102,14 @@ async def add_book(data: BookAddShema, session: SessionDep):
     session.add(new_book)
     await session.commit()
     return {"message": "Book added successfully"}
+
+
+@app.get("/flat/")
+async def get_flat(session: SessionDep):
+    query = select(FlatModel).limit(2)
+    result = await session.execute(query)
+    return result.scalars().all()
+
 
 
 @app.post("/sale_flat/")
