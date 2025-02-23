@@ -104,32 +104,24 @@ async def add_book(data: BookAddShema, session: SessionDep):
     return {"message": "Book added successfully"}
 
 
-@app.get("/flat/")
+@app.get("/flat/", summary="Вывод 2 первые записи.", tags=["Вывести записи"])
 async def get_flat(session: SessionDep):
     query = select(FlatModel).limit(2)
     result = await session.execute(query)
     return result.scalars().all()
 
 
-@app.post("/flat_sale/")
+@app.post("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по числу комнат", tags=["Вывести ссылки"])
 async def get_sale_flat(data: RoomShema, session: AsyncSession = Depends(
     get_session)):
     room = data.room
     area = data.area
     query = text(f"SELECT cost, concat('farpost.ru',link)  as link FROM "
                  f"farpost.s1 WHERE room = '{room}'and "
-                 f"area='{area}' ORDER BY cost desc limit 5")
+                 f"area='{area}' ORDER BY cost  limit 5")
     result = await session.execute(query)
 
     # Преобразуем результат в список словарей
     flats = [dict(row) for row in result.mappings()]
-
     return flats
 
-# @app.post("/sale_flat/")
-# async def create_item(data: RoomShema):
-#     room = data.room
-#     square = data.square
-#
-#     return {"Выгрузка для ": f"{room}- комнатных квартир, площадью -"
-#                              f" {square}"}
