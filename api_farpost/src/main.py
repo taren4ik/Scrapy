@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from typing import Annotated
+from typing import Annotated, Literal
 from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import delete, func, insert, select, update, text
@@ -111,7 +111,8 @@ async def get_flat(session: SessionDep):
     return result.scalars().all()
 
 
-@app.post("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по числу комнат", tags=["Вывести ссылки"])
+@app.post("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по "
+                              "числу комнат", tags=["Вывести ссылки"])
 async def get_sale_flat(data: RoomShema, session: AsyncSession = Depends(
     get_session)):
     room = data.room
@@ -125,3 +126,17 @@ async def get_sale_flat(data: RoomShema, session: AsyncSession = Depends(
     flats = [dict(row) for row in result.mappings()]
     return flats
 
+
+@app.get("/fsale/")
+async def get_posts(room:  str,
+    area: Literal["Эгершельд", "Русский"] = "Русский", session: AsyncSession = Depends(
+    get_session)):
+
+    query = text(f"SELECT cost, concat('farpost.ru',link)  as link FROM "
+                 f"farpost.s1 WHERE room = '{room}' and "
+                 f"area='{area}' ORDER BY cost  limit 5")
+    result = await session.execute(query)
+
+    # Преобразуем результат в список словарей
+    flats = [dict(row) for row in result.mappings()]
+    return flats
