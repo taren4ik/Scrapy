@@ -111,27 +111,47 @@ async def get_flat(session: SessionDep):
     return result.scalars().all()
 
 
-@app.post("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по "
-                              "числу комнат", tags=["Вывести ссылки"])
-async def get_sale_flat(data: RoomShema, session: AsyncSession = Depends(
-    get_session)):
-    room = data.room
-    area = data.area
-    query = text(f"SELECT cost, concat('farpost.ru',link)  as link FROM "
-                 f"farpost.s1 WHERE room = '{room}'and "
-                 f"area='{area}' ORDER BY cost  limit 5")
-    result = await session.execute(query)
-
-    # Преобразуем результат в список словарей
-    flats = [dict(row) for row in result.mappings()]
-    return flats
-
-
-@app.get("/fsale/")
-async def get_posts(room:  str,
-    area: Literal["Эгершельд", "Русский"] = "Русский", session: AsyncSession = Depends(
-    get_session)):
-
+@app.get("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по "
+                                 "числу комнат", tags=["Вывести ссылки"])
+async def get_posts(room: str,
+                    area: Literal["Снеговая падь",
+                                  "Фадеева",
+                                  "Толстого (Буссе)",
+                                  "Сахарный ключ",
+                                  "Центр",
+                                  "Пригород",
+                                  "Садгород",
+                                  "Чуркин",
+                                  "Некрасовская",
+                                  "Третья рабочая",
+                                  "Горностай",
+                                  "Снеговая",
+                                  "Луговая",
+                                  "Спутник",
+                                  "Чайка",
+                                  "64, 71 микрорайоны",
+                                  "Борисенко",
+                                  "Весенняя",
+                                  "Заря",
+                                  "Трудовая",
+                                  "Вторая речка",
+                                  "частное лицо",
+                                  "БАМ",
+                                  "Столетие",
+                                  "Гайдамак",
+                                  "Седанка",
+                                  "о. Русский",
+                                  "Первая речка",
+                                  "Патрокл",
+                                  "Трудовое",
+                                  "Баляева",
+                                  "о. Попова",
+                                  "Океанская",
+                                  "Эгершельд",
+                                  "Тихая"] = "Русский",
+                    session:
+                    AsyncSession = Depends(
+                        get_session)):
     query = text(f"SELECT cost, concat('farpost.ru',link)  as link FROM "
                  f"farpost.s1 WHERE room = '{room}' and "
                  f"area='{area}' ORDER BY cost  limit 5")
