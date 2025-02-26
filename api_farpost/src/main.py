@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import delete, func, insert, select, update, text
+from authx import AuthX, AuthXConfig
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, \
     AsyncSession
@@ -23,6 +24,10 @@ engine = create_async_engine((f'postgresql+asyncpg://{DB_USER}:{DB_PASS}'
                               f'/{DB_NAME}'))
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)
+
+
+
+
 
 
 async def get_session():
@@ -74,36 +79,49 @@ class FlatModel(Base):
 app = FastAPI()
 
 
+config = AuthXConfig()
+config.JWT_SECRET_KEY = "SECRET_KEY"
+config.JWT_ACCESS_COOKIE_NAME = "my_access_token"
+config.JWT_TOKEN_LOCATION = ["cookies"]
+
+
 class RoomShema(BaseModel):
     room: str
     area: str
 
 
-class BookAddShema(BaseModel):
-    title: str
-    author: str
+# class BookAddShema(BaseModel):
+#     title: str
+#     author: str
 
 
-@app.post("/setup_database/", summary="Создание БД",
-          tags=["Создание таблицы в БД Postgres"])
-async def setup_database():
-    async with engine.begin() as conn:
-        # await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    return {"Create Table": "Succsess"}
+# @app.post("/setup_database/", summary="Создание БД",
+#           tags=["Создание таблицы в БД Postgres"])
+# async def setup_database():
+#     async with engine.begin() as conn:
+#         # await conn.run_sync(Base.metadata.drop_all)
+#         await conn.run_sync(Base.metadata.create_all)
+#     return {"Create Table": "Succsess"}
 
 
-@app.post("/books/", summary="Добавление записи", tags=["Добавить запись"])
-async def add_book(data: BookAddShema, session: SessionDep):
-    new_book = BookModel(
-        title=data.title,
-        author=data.author
-    )
-    session.add(new_book)
-    await session.commit()
-    return {"message": "Book added successfully"}
+# @app.post("/books/", summary="Добавление записи", tags=["Добавить запись"])
+# async def add_book(data: BookAddShema, session: SessionDep):
+#     new_book = BookModel(
+#         title=data.title,
+#         author=data.author
+#     )
+#     session.add(new_book)
+#     await session.commit()
+#     return {"message": "Book added successfully"}
+
+@app.post("/login")
+async def login():
+    """Login session."""
 
 
+@app.post("/protected")
+async def protected():
+    """Login session."""
 @app.get("/flat/", summary="Вывод 2 первые записи.", tags=["Вывести записи"])
 async def get_flat(session: SessionDep):
     query = select(FlatModel).limit(2)
