@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, Response
 from pydantic import BaseModel
 from typing import Annotated, Literal
 from dotenv import load_dotenv
@@ -83,12 +83,15 @@ config = AuthXConfig()
 config.JWT_SECRET_KEY = "SECRET_KEY"
 config.JWT_ACCESS_COOKIE_NAME = "my_access_token"
 config.JWT_TOKEN_LOCATION = ["cookies"]
-
+security = AuthX(config=config)
 
 class RoomShema(BaseModel):
     room: str
     area: str
 
+class UserLoginShema(BaseModel):
+    login: str
+    password: str
 
 # class BookAddShema(BaseModel):
 #     title: str
@@ -115,8 +118,14 @@ class RoomShema(BaseModel):
 #     return {"message": "Book added successfully"}
 
 @app.post("/login")
-async def login():
+async def login(creds: UserLoginShema, response: Response):
     """Login session."""
+    if creds.login == "admin" and creds.password == '123456':
+        token =security.create_access_token(uid="555")
+        response.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token)
+        return {"access_token": token}
+    raise HTTPException(status_code=401, detail="Incorrect username or "
+                                                "password")
 
 
 @app.post("/protected")
