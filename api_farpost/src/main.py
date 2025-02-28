@@ -8,6 +8,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import delete, func, insert, select, update, text
 from authx import AuthX, AuthXConfig
 
+
+
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, \
     AsyncSession
 
@@ -78,11 +80,11 @@ class FlatModel(Base):
 
 app = FastAPI()
 
-
 config = AuthXConfig()
 config.JWT_SECRET_KEY = "SECRET_KEY"
 config.JWT_ACCESS_COOKIE_NAME = "my_access_token"
 config.JWT_TOKEN_LOCATION = ["cookies"]
+
 security = AuthX(config=config)
 
 class RoomShema(BaseModel):
@@ -128,9 +130,17 @@ async def login(creds: UserLoginShema, response: Response):
                                                 "password")
 
 
-@app.post("/protected")
+@app.post("/protected",
+          dependencies=[Depends(security.access_token_required)],
+          )
 async def protected():
     """Login session."""
+    return {"data": "TOP SECRET"}
+
+
+
+
+
 @app.get("/flat/", summary="Вывод 2 первые записи.", tags=["Вывести записи"])
 async def get_flat(session: SessionDep):
     query = select(FlatModel).limit(2)
