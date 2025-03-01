@@ -139,8 +139,6 @@ async def protected():
 
 
 
-
-
 @app.get("/flat/", summary="Вывод 2 первые записи.", tags=["Вывести записи"])
 async def get_flat(session: SessionDep):
     query = select(FlatModel).limit(2)
