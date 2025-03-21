@@ -1,12 +1,15 @@
 import os
+import csv
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Annotated, Literal
 from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import delete, func, insert, select, update, text
 from authx import AuthX, AuthXConfig
+
 
 
 
@@ -45,12 +48,12 @@ class Base(DeclarativeBase):
     pass
 
 
-class BookModel(Base):
-    __tablename__ = "books"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str]
-    author: Mapped[str]
+# class BookModel(Base):
+#     __tablename__ = "books"
+#
+#     id: Mapped[int] = mapped_column(primary_key=True)
+#     title: Mapped[str]
+#     author: Mapped[str]
 
 
 class FlatModel(Base):
@@ -146,6 +149,15 @@ async def get_flat(session: SessionDep):
     query = select(FlatModel).limit(2)
     result = await session.execute(query)
     return result.scalars().all()
+
+
+@app.get("/download-csv/" , summary="Выгрузить самые дешовые квартиры в районе по числу комнат", tags=["Выгрузка в CSV"])
+async def download_csv(session: SessionDep):
+
+    # Выполняем SQL-запрос
+    query = text(f"SELECT 1")
+    result = await session.execute(query)
+
 
 
 @app.get("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по "
