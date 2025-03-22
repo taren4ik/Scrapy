@@ -1,4 +1,5 @@
 import os
+import io
 import csv
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Response
@@ -31,7 +32,6 @@ engine = create_async_engine((f'postgresql+asyncpg://{DB_USER}:{DB_PASS}'
                               f'/{DB_NAME}'))
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)
-
 
 
 
@@ -151,19 +151,64 @@ async def get_flat(session: SessionDep):
     return result.scalars().all()
 
 
-@app.get("/download-csv/" , summary="Выгрузить самые дешовые квартиры в районе по числу комнат", tags=["Выгрузка в CSV"])
-async def download_csv(session: SessionDep):
+async def fetch_data(session: AsyncSession, query: text):
+    """Выполнение SQL-запроса и получение данных"""
+    try:
+        result = await session.execute(query)
+        return result.fetchall(), result.keys()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Выполняем SQL-запрос
-    query = text(f"SELECT 1")
-    result = await session.execute(query)
 
+def generate_csv_stream(rows, columns):
+    """Генератор CSV данных"""
+    csv_buffer = io.StringIO()
+    writer = csv.writer(csv_buffer)
+
+    # Заголовки
+    writer.writerow(columns)
+    yield csv_buffer.getvalue()
+    csv_buffer.seek(0)
+    csv_buffer.truncate(0)
+
+    # Данные
+    for row in rows:
+        writer.writerow([str(item) for item in row])
+        yield csv_buffer.getvalue()
+        csv_buffer.seek(0)
+        csv_buffer.truncate(0)
+
+
+
+
+
+@app.get("/export-csv/", summary="Выгрузить 20 самых дешовых квартиры по "
+                                 "числу комнат", tags=["Выгрузка в CSV"])
+async def export_csv(room:str, session: AsyncSession = Depends(get_session)):
+    """Эндпоинт для выгрузки CSV"""
+
+    query = text(f"SELECT cost, area, concat('farpost.ru',link)  as link FROM "
+                 f"farpost.s1 WHERE room = '{room}'"
+                 f" ORDER BY cost  limit 20")
+    try:
+        rows, columns = await fetch_data(session, query)
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No data found")
+
+        return StreamingResponse(
+            generate_csv_stream(rows, columns),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=data.csv"}
+        )
+
+    finally:
+        await session.close()
 
 
 @app.get("/flat_sale/", summary="Вывести самые дешовые квартиры в районе по "
                                  "числу комнат", tags=["Вывести ссылки"])
-async def get_posts(room: str,
-                    area: Literal["Снеговая падь",
+async def get_posts(room: str, area: Literal["Снеговая падь",
                                   "Фадеева",
                                   "Толстого (Буссе)",
                                   "Сахарный ключ",
