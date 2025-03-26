@@ -402,6 +402,7 @@ def load_db(**kwargs):
             index=False
         )
 
+ENABLE_TASK = False
 
 with DAG('farpost_dag_short_rent',
          description='select and transform data',
@@ -412,12 +413,30 @@ with DAG('farpost_dag_short_rent',
          tags=['farpost', 'etl', 'rent']
          ) as dag:
    # with TaskGroup(group_id='push_db') as processing_tasks:
-    extract_data = PythonOperator(
-        task_id='extract_data',
-        python_callable=scrape_all_profiles,
-        op_kwargs=param,
-        is_removed=True
-    )
+    if ENABLE_TASK:
+        extract_data = PythonOperator(
+            task_id='extract_data',
+            python_callable=scrape_all_profiles,
+            op_kwargs=param,
+        )
+
+        get_procedure = PostgresOperator(
+            task_id='get_procedure',
+            postgres_conn_id="pg",
+
+            sql="""
+                      CALL farpost.insert_update_layer_rent();
+                   """,
+        )
+
+        garbage_collection = PostgresOperator(
+            task_id='garbage_collection',
+            postgres_conn_id="pg",
+
+            sql="""
+                         VACUUM FULL;
+                      """,
+        )
 
     load_data = PythonOperator(
         task_id='load_data',
@@ -427,25 +446,7 @@ with DAG('farpost_dag_short_rent',
 
     initial = PythonOperator(task_id='initial', python_callable=get_path)
 
-    get_procedure = PostgresOperator(
-        task_id='get_procedure',
-        postgres_conn_id="pg",
 
-        sql="""
-                  CALL farpost.insert_update_layer_rent();
-               """,
-        is_removed=True
-    )
-
-    garbage_collection = PostgresOperator(
-        task_id='garbage_collection',
-        postgres_conn_id="pg",
-
-        sql="""
-                     VACUUM FULL;
-                  """,
-        is_removed=True
-    )
 
     get_clean = PostgresOperator(
         task_id='get_clean',
