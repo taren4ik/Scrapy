@@ -416,7 +416,7 @@ with DAG('farpost_dag_short_rent',
         task_id='extract_data',
         python_callable=scrape_all_profiles,
         op_kwargs=param,
-        enabled=False
+        is_removed=True
     )
 
     load_data = PythonOperator(
@@ -434,7 +434,7 @@ with DAG('farpost_dag_short_rent',
         sql="""
                   CALL farpost.insert_update_layer_rent();
                """,
-        enabled=False
+        is_removed=True
     )
 
     garbage_collection = PostgresOperator(
@@ -444,7 +444,7 @@ with DAG('farpost_dag_short_rent',
         sql="""
                      VACUUM FULL;
                   """,
-        enabled=False
+        is_removed=True
     )
 
     get_clean = PostgresOperator(
