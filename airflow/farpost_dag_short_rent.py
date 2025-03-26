@@ -415,7 +415,8 @@ with DAG('farpost_dag_short_rent',
     extract_data = PythonOperator(
         task_id='extract_data',
         python_callable=scrape_all_profiles,
-        op_kwargs=param
+        op_kwargs=param,
+        enabled=False
     )
 
     load_data = PythonOperator(
@@ -433,6 +434,7 @@ with DAG('farpost_dag_short_rent',
         sql="""
                   CALL farpost.insert_update_layer_rent();
                """,
+        enabled=False
     )
 
     garbage_collection = PostgresOperator(
@@ -442,6 +444,7 @@ with DAG('farpost_dag_short_rent',
         sql="""
                      VACUUM FULL;
                   """,
+        enabled=False
     )
 
     get_clean = PostgresOperator(
@@ -454,6 +457,7 @@ with DAG('farpost_dag_short_rent',
                     square = NULL
                 where length(square) > 5;
             """,
+
     )
 
 
@@ -462,7 +466,9 @@ with DAG('farpost_dag_short_rent',
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-    initial >> extract_data >>load_data >> get_remove >> get_clean >> get_procedure >> garbage_collection
+    #initial >> extract_data >>load_data >> get_remove >> get_clean >>
+   # get_procedure >> garbage_collection
+    initial >> load_data >> get_remove >> get_clean
 
 
 if __name__ == "__main__":
