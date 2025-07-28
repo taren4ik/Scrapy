@@ -248,15 +248,21 @@ def scrape_all_profiles(start_url, page):
                     # author.append(value.split(",")[1])
 
                 if 'кв.' in value:
-                    if value.split()[-3] == 'этаж,':
-                        square.append(value.split()[-7])
-                    else:
-                        square.append(
-                            value.split(",")[-3] + "," + value.split(",")[-2][0]
+                    if value.split(",")[0] == "64":
+                        value.replace("64, 71 микрорайоны",
+                                      "64_71_микрорайоны")
 
-                            if len(value.split(",")) > 2
-                            else 0
-                        )
+                    if value.split()[-1] == 'этаж' and value.split()[2] == \
+                            'кв.':
+                        square.append(value.split()[1])
+                    else:
+                        square.append(value.split()[2])
+                    #     square.append(
+                    #         value.split(",")[-3] + "," + value.split(",")[-2][0]
+                    #
+                    #         if len(value.split(",")) > 2
+                    #         else 0
+                    #     )
                 else:
                     square.append(None)
 
