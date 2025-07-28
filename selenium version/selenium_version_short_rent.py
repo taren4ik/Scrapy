@@ -196,6 +196,11 @@ def scrape_all_profiles(start_url, page):
             else:
                 views.append("0")
 
+            if post.find("div", class_="bzr-badge__text"):
+                author.append('агенство')
+            else:
+                author.append("частное лицо")
+
         profile_links = [
             a["href"]
             for a in soup.find_all(
@@ -234,13 +239,13 @@ def scrape_all_profiles(start_url, page):
 
                 if value.split(",")[0] == "64":
                     area.append("64," + value.split(",")[1])
-                    if len(value.split(",")) == 2:
-                        author.append('None')
-                    else:
-                        author.append(value.split(",")[2])
+                    # if len(value.split(",")) == 2:
+                    #     author.append('None')
+                    # else:
+                    #     author.append(value.split(",")[2])
                 else:
                     area.append(value.split(",")[0])
-                    author.append(value.split(",")[1])
+                    # author.append(value.split(",")[1])
 
                 if 'кв.' in value:
                     if value.split()[-3] == 'этаж,':
@@ -270,7 +275,7 @@ def scrape_all_profiles(start_url, page):
                 "room": room,
                 "is_check": is_check,
                 "square": "None",
-                "author": "None",
+                "author": author,
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
                 "type_rental": "суточная",
@@ -281,7 +286,7 @@ def scrape_all_profiles(start_url, page):
             df.loc[row, "cost"] = cost[i]
             df.loc[row, "area"] = area[i]
             df.loc[row, "square"] = square[i]
-            df.loc[row, "author"] = author[i]
+            #df.loc[row, "author"] = author[i]
 
         for i, row in enumerate(
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):

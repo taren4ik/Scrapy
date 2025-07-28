@@ -15,7 +15,6 @@ from authx import AuthX, AuthXConfig
 
 
 
-
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, \
     AsyncSession
 
@@ -165,13 +164,12 @@ def generate_csv_stream(rows, columns):
     csv_buffer = io.StringIO()
     writer = csv.writer(csv_buffer)
 
-    # Заголовки
+
     writer.writerow(columns)
     yield csv_buffer.getvalue()
     csv_buffer.seek(0)
     csv_buffer.truncate(0)
 
-    # Данные
     for row in rows:
         writer.writerow([str(item) for item in row])
         yield csv_buffer.getvalue()
@@ -251,6 +249,5 @@ async def get_posts(room: str, area: Literal["Снеговая падь",
                  f"area='{area}' ORDER BY cost  limit 5")
     result = await session.execute(query)
 
-    # Преобразуем результат в список словарей
     flats = [dict(row) for row in result.mappings()]
     return flats
