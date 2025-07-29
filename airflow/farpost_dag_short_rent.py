@@ -71,7 +71,7 @@ def get_path(**kwargs):
 
 def write_profiles_to_csv(df, filename, flag=False):
     """
-    Запись информации в файл из DataFrame.
+    Write info from DataFrame to csv.
     :param df, flag:
     :return:
     """
@@ -234,6 +234,11 @@ def scrape_all_profiles(**kwargs):
             else:
                 apartament.views.append("0")
 
+            if post.find("div", class_="bzr-badge__text"):
+                apartament.author.append('агенство')
+            else:
+                apartament.author.append("частное лицо")
+
         apartament.profile_links = [
             a["href"]
             for a in soup.find_all(
@@ -281,11 +286,16 @@ def scrape_all_profiles(**kwargs):
                     apartament.author.append(value.split(",")[1])
 
                 if 'кв.' in value:
-                    if value.split()[-3] == 'этаж,':
-                        apartament.square.append(value.split()[-7])
+                    if value.split(",")[0] == "64":
+                        value = value.replace("64, 71 микрорайоны",
+                                      "64_71_микрорайоны")
+
+                    if value.split()[-1] == 'этаж' and value.split()[2] == \
+                            'кв.':
+                        apartament.square.append(value.split()[1])
                     else:
                         apartament.square.append(
-                            value.split(",")[-3] + "," + value.split(",")[-2][0]
+                            value.split()[2]
 
                             if len(value.split(",")) > 2
                             else 0
@@ -310,7 +320,7 @@ def scrape_all_profiles(**kwargs):
                 "room": apartament.room,
                 "is_check": apartament.is_check,
                 "square": "None",
-                "author": "None",
+                "author": apartament.author,
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
                 "type_rental": "суточная аренда",
@@ -323,7 +333,7 @@ def scrape_all_profiles(**kwargs):
             df.loc[row, "cost"] = cost[i]
             df.loc[row, "area"] = apartament.area[i]
             df.loc[row, "square"] = apartament.square[i]
-            df.loc[row, "author"] = apartament.author[i]
+
 
 
         for i, row in enumerate(

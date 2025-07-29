@@ -239,17 +239,12 @@ def scrape_all_profiles(start_url, page):
 
                 if value.split(",")[0] == "64":
                     area.append("64," + value.split(",")[1])
-                    # if len(value.split(",")) == 2:
-                    #     author.append('None')
-                    # else:
-                    #     author.append(value.split(",")[2])
                 else:
                     area.append(value.split(",")[0])
-                    # author.append(value.split(",")[1])
 
                 if 'кв.' in value:
                     if value.split(",")[0] == "64":
-                        value.replace("64, 71 микрорайоны",
+                        value = value.replace("64, 71 микрорайоны",
                                       "64_71_микрорайоны")
 
                     if value.split()[-1] == 'этаж' and value.split()[2] == \
@@ -257,12 +252,7 @@ def scrape_all_profiles(start_url, page):
                         square.append(value.split()[1])
                     else:
                         square.append(value.split()[2])
-                    #     square.append(
-                    #         value.split(",")[-3] + "," + value.split(",")[-2][0]
-                    #
-                    #         if len(value.split(",")) > 2
-                    #         else 0
-                    #     )
+
                 else:
                     square.append(None)
 
@@ -279,7 +269,6 @@ def scrape_all_profiles(start_url, page):
                 "view": views,
                 "cost": "None",
                 "room": room,
-                "is_check": is_check,
                 "square": "None",
                 "author": author,
                 "date": datetime.datetime.now().__str__(),
@@ -292,7 +281,6 @@ def scrape_all_profiles(start_url, page):
             df.loc[row, "cost"] = cost[i]
             df.loc[row, "area"] = area[i]
             df.loc[row, "square"] = square[i]
-            #df.loc[row, "author"] = author[i]
 
         for i, row in enumerate(
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):
