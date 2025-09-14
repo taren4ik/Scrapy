@@ -3,9 +3,11 @@ import logging
 import random
 import time
 import os
+from datetime import timedelta
 
 import numpy as np
 import pandas as pd
+from airflow.sensors.external_task import ExternalTaskSensor
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -457,13 +459,21 @@ with DAG('farpost_dag_rent',
             """,
     )
 
-
-
-
+    wait_for_external_task = ExternalTaskSensor(
+        task_id='wait_for_external_task',
+        external_dag_id='farpost_dag_short_rent',
+        external_task_id='garbage_collection',
+        allowed_states=['success'],
+        failed_states=['failed', 'skipped'],
+        execution_delta=timedelta(minutes=30),
+        timeout=3600,
+        mode='reschedule',
+    )
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-    initial >> extract_data >> load_data >> get_remove >> get_clean >> get_procedure >> garbage_collection
+    wait_for_external_task >> initial >> extract_data >> load_data >> \
+                           get_remove >> get_clean >> get_procedure >> garbage_collection
 
 
 if __name__ == "__main__":
