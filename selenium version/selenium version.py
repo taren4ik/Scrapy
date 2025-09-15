@@ -344,7 +344,9 @@ def load_db(filename):
 
 
 if __name__ == '__main__':
-    load_db(
-        all_profiles=scrape_all_profiles(f"{URL}/", page=1)
-
+    # load_db(
+    #     all_profiles=scrape_all_profiles(f"{URL}/", page=1)
+    # )
+  load_db(
+        "D:\developer\Scrapy\selenium version\profiles_farpost_2024_10_28.csv"
     )

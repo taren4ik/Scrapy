@@ -270,6 +270,7 @@ def scrape_all_profiles(start_url, page):
                 "cost": "None",
                 "room": room,
                 "square": "None",
+                "is_check": is_check,
                 "author": author,
                 "date": datetime.datetime.now().__str__(),
                 "type_post": "rent",
