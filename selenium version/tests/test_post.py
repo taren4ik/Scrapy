@@ -10,7 +10,5 @@ class TestPost(unittest.TestCase):
         self.assertEqual(result, 200, 'Сервер не отвечает')
 
 
-
-
 if __name__ == '__main__':
     unittest.main()

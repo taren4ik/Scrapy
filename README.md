@@ -57,5 +57,5 @@ python selenium_version.py
 
 ***Над проектом работал:***
 * Дмитрий Пермяков | Github:https://github.com/taren4ik
-* Презентация Проекта на платформе Metabase farpost-analytics.site
+* Презентация Проекта на платформе Metabase https://www.farpost-analitics.site/public/dashboard/8a791668-1fe8-4278-b008-8c130c457cce?tab=33-%D0%BF%D1%80%D0%BE%D0%B4%D0%B0%D0%B6%D0%B0
 
