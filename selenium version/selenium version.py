@@ -251,7 +251,9 @@ def scrape_all_profiles(start_url, page):
                     value.split(",")[-3] + ',' + value.split(",")[-2][0]
                 )
             elif (value.split(' ')[-1]).isdigit():
+                apartament.square.append(
                 (value.split(",")[-3] + ',' + value.split(",")[-2]).split()[0]
+                )
             else:
                 apartament.square.append(
                     value.split(",")[-2] + "," + value.split(",")[-1][0]
