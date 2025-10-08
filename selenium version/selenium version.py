@@ -250,6 +250,8 @@ def scrape_all_profiles(start_url, page):
                 apartament.square.append(
                     value.split(",")[-3] + ',' + value.split(",")[-2][0]
                 )
+            elif (value.split(' ')[-1]).isdigit():
+                (value.split(",")[-3] + ',' + value.split(",")[-2]).split()[0]
             else:
                 apartament.square.append(
                     value.split(",")[-2] + "," + value.split(",")[-1][0]
@@ -344,9 +346,9 @@ def load_db(filename):
 
 
 if __name__ == '__main__':
-    # load_db(
-    #     all_profiles=scrape_all_profiles(f"{URL}/", page=1)
-    # )
-  load_db(
-        "D:\developer\Scrapy\selenium version\profiles_farpost_2024_10_28.csv"
+    load_db(
+        all_profiles=scrape_all_profiles(f"{URL}/", page=1)
     )
+  # load_db(
+  #       "D:\developer\Scrapy\selenium version\profiles_farpost_2025_10_08.csv"
+  #   )
