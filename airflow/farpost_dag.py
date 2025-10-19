@@ -51,7 +51,6 @@ param = {
     'page': 1
 }
 
-# ----------------подключение к dwh
 postgres_conn_id = 'pg'
 
 
@@ -125,7 +124,7 @@ class ApartmentAttribute:
 
 def scrape_all_profiles(**kwargs):
     """
-    Извлекает основную информацию на все объявления.
+    Extract base information from post.
     :return:
     """
     ti = kwargs['ti']
@@ -327,6 +326,11 @@ def scrape_all_profiles(**kwargs):
 
 
 def get_remove(**kwargs):
+    """
+    Remove file from docker-container.
+    :param kwargs:
+    :return:
+    """
     ti = kwargs['ti']
     path = ti.xcom_pull(key='filename', task_ids='initial')
     if os.path.isfile(path):
@@ -409,7 +413,10 @@ with DAG('farpost_dag_sell',
                """,
     )
 
-    get_remove = PythonOperator(task_id='get_remove', python_callable=get_remove)
+    get_remove = PythonOperator(
+        task_id='get_remove',
+        python_callable=get_remove
+    )
 
     initial >> extract_data >> load_data >> get_remove >> get_procedure
 
