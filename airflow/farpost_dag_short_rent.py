@@ -17,6 +17,7 @@ from dags.user_agents import USER_AGENTS
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 #load_dotenv()
@@ -471,15 +472,24 @@ with DAG('farpost_dag_short_rent',
 
     )
 
-
+    wait_for_external_task = ExternalTaskSensor(
+        task_id='wait_for_external_task',
+        external_dag_id='farpost_dag',
+        external_task_id='extract_data',
+        allowed_states=['success'],
+        failed_states=['failed', 'skipped'],
+        poke_interval=300,
+        timeout=18000,
+        mode='poke'
+    )
 
 
     get_remove = PythonOperator(task_id='get_remove',
                                 python_callable=get_remove
                                 )
-    #initial >> extract_data >>load_data >> get_remove >> get_clean >>
-   # get_procedure >> garbage_collection
-    initial >> load_data >> get_remove >> get_clean
+    #wait_for_external_task >> initial >> extract_data >>load_data >>
+   # get_remove >> get_clean >> get_procedure >> garbage_collection
+    wait_for_external_task >> initial >> load_data >> get_remove >> get_clean
 
 
 if __name__ == "__main__":
