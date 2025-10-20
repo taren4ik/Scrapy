@@ -428,7 +428,7 @@ with DAG('farpost_dag_sell',
         python_callable=get_remove
     )
 
-    initial >> extract_data >> load_data >> get_remove >> load_db >> \
+    initial >> extract_data >> load_data >> [get_remove, clean_data] >> \
     get_procedure
 
 if __name__ == "__main__":
