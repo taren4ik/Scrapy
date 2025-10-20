@@ -413,12 +413,23 @@ with DAG('farpost_dag_sell',
                """,
     )
 
+    clean_data = PostgresOperator(
+        task_id='clean_data',
+        postgres_conn_id="pg",
+
+        sql="""
+        UPDATE farpost.farpost_staging 
+        SET square = 0 
+        WHERE square IN ('застройщик,', 'частное', 'агентство,');""",
+    )
+
     get_remove = PythonOperator(
         task_id='get_remove',
         python_callable=get_remove
     )
 
-    initial >> extract_data >> load_data >> get_remove >> get_procedure
+    initial >> extract_data >> load_data >> get_remove >> load_db >> \
+    get_procedure
 
 if __name__ == "__main__":
     dag.test()
