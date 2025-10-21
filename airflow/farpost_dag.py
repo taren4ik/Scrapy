@@ -55,6 +55,11 @@ postgres_conn_id = 'pg'
 
 
 def get_path(**kwargs):
+    """
+    Get file_attribute.
+    :param kwargs:
+    :return:
+    """
     ti = kwargs['ti']
     date_now = datetime.date.today().strftime('%Y_%m_%d')
     path = "/opt/airflow/data"
@@ -111,6 +116,11 @@ class ApartmentAttribute:
         self.name_announcement = []
 
     def clean_attribute(self):
+        """
+        Clean aatribute.
+        :return:
+        """
+
         self.area = []
         self.author = []
         self.square = []
@@ -389,7 +399,7 @@ with DAG('farpost_dag_sell',
          default_args=args,
          tags=['farpost', 'etl', 'sell']
          ) as dag:
-   # with TaskGroup(group_id='push_db') as processing_tasks:
+
     extract_data = PythonOperator(
         task_id='extract_data',
         python_callable=scrape_all_profiles,
