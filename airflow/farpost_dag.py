@@ -1,17 +1,15 @@
 import datetime
+import os
 import random
 import time
-import os
 
 import numpy as np
 import pandas as pd
-
 from bs4 import BeautifulSoup
+from dags.user_agents import USER_AGENTS
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from sqlalchemy import create_engine
-
-from dags.user_agents import USER_AGENTS
 
 from airflow import DAG
 from airflow.models import Variable
@@ -355,7 +353,7 @@ def load_db(**kwargs):
     """
     ti = kwargs['ti']
     filename = ti.xcom_pull(key='filename', task_ids='initial')
-    date_now = ti.xcom_pull(key='date_now', task_ids='initial')
+    #date_now = ti.xcom_pull(key='date_now', task_ids='initial')
     #filename = f'/opt/airflow/data/profiles_farpost_rent_{date_now}.csv
     database_uri = (
         f"postgresql://{user}:{password}@{host}/{database}"

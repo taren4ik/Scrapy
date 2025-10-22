@@ -1,24 +1,22 @@
 import datetime
 import logging
+import os
 import random
 import time
-import os
 
 import numpy as np
 import pandas as pd
-
 from bs4 import BeautifulSoup
+from dags.user_agents import USER_AGENTS
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from sqlalchemy import create_engine
 
-from dags.user_agents import USER_AGENTS
-
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
-from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.sensors.external_task import ExternalTaskSensor
 
 #load_dotenv()
 
