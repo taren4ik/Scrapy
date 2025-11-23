@@ -327,5 +327,4 @@ def scrape_all_profiles(start_url, page):
 
 all_profiles = scrape_all_profiles(
     f"{URL}/", page=1
-
 )
