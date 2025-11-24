@@ -324,7 +324,6 @@ def scrape_all_profiles(start_url, page):
     driver.quit()
     return True
 
-
 all_profiles = scrape_all_profiles(
     f"{URL}/", page=1
 )
