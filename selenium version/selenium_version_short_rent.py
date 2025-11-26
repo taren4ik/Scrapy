@@ -1,8 +1,8 @@
 import datetime
+import logging
 import os
 import random
 import time
-import logging
 
 import numpy as np
 import pandas as pd
@@ -42,6 +42,7 @@ def timer_wrapper(func):
     :param func:
     :return:
     """
+
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -131,7 +132,7 @@ def scrape_all_profiles(start_url, page):
         soup = BeautifulSoup(response, "html.parser")
 
         posts = int(soup.find_all("span", id="itemsCount_placeholder")[0][
-            "data-count"])
+                        "data-count"])
 
         page_limit = round(posts / 50 + 1)
         if page == page_limit:
@@ -245,11 +246,11 @@ def scrape_all_profiles(start_url, page):
                 if 'кв.' in value:
                     if value.split(",")[0] == "64":
                         value = value.replace("64, 71 микрорайоны",
-                                      "64_71_микрорайоны")
+                                              "64_71_микрорайоны")
                     if value.split()[1] == 34 or value.split()[2] == 34:
                         pass
                     if (value.split()[-1] == 'этаж' and value.split()[2] == \
-                            'кв.') or (len(value.split()) < 5):
+                        'кв.') or (len(value.split()) < 5):
                         square.append(value.split()[1])
 
                     else:
@@ -259,8 +260,8 @@ def scrape_all_profiles(start_url, page):
                     square.append(None)
 
         logging.info(f"Постов {len(post_id)}  {len(name_announcement)} "
-              f"url: {len(profile_links)} комнат: {len(room)} "
-              f"аквтивное: {len(is_check)}")
+                     f"url: {len(profile_links)} комнат: {len(room)} "
+                     f"аквтивное: {len(is_check)}")
 
         df = pd.DataFrame(
             {
@@ -289,7 +290,6 @@ def scrape_all_profiles(start_url, page):
                 np.where(df["link"] == "javascript:void(0)")[0].tolist()):
             df.loc[row, "is_check"] = False
             df.loc[row, "link"] = None
-
 
         flag = True if page == 1 else False
         write_profiles_to_csv(df, flag)
