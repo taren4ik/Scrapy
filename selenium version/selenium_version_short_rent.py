@@ -246,10 +246,12 @@ def scrape_all_profiles(start_url, page):
                     if value.split(",")[0] == "64":
                         value = value.replace("64, 71 микрорайоны",
                                       "64_71_микрорайоны")
-
-                    if value.split()[-1] == 'этаж' and value.split()[2] == \
-                            'кв.':
+                    if value.split()[1] == 34 or value.split()[2] == 34:
+                        pass
+                    if (value.split()[-1] == 'этаж' and value.split()[2] == \
+                            'кв.') or (len(value.split()) < 5):
                         square.append(value.split()[1])
+
                     else:
                         square.append(value.split()[2])
 
