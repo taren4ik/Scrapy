@@ -1,8 +1,8 @@
 import datetime
+import logging
 import os
 import random
 import time
-import logging
 
 import numpy as np
 import pandas as pd
@@ -246,6 +246,8 @@ def scrape_all_profiles(start_url, page):
                 if 'кв.' in value:
                     if value.split()[-3] == 'этаж,':
                         square.append(value.split()[-7])
+                    elif value.split(",")[-2][0]:
+                        square.append(value.split(",")[-2].split()[0])
                     else:
                         square.append(
                             value.split(",")[-3] + "," + value.split(",")[-2][0]

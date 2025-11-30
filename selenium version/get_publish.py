@@ -1,8 +1,8 @@
 import os
-import time
 import random
-import requests
+import time
 
+import requests
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
