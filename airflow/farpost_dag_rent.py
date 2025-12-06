@@ -284,6 +284,8 @@ def scrape_all_profiles(**kwargs):
                 if 'кв.' in value:
                     if value.split()[-3] == 'этаж,':
                         apartament.square.append(value.split()[-7])
+                    elif value.split(",")[-2][0]:
+                        apartament.square.append(value.split(",")[-2].split()[0])
                     else:
                         apartament.square.append(
                             value.split(",")[-3] + "," + value.split(",")[-2][0]
