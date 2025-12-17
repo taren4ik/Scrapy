@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 
 from airflow import DAG
 from airflow.models import Variable
+from airflow.providers.common.sql.sensors.sql import SqlSensor
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
@@ -436,8 +437,19 @@ with DAG('farpost_dag_sell',
         python_callable=get_remove
     )
 
-    initial >> extract_data >> load_data >> [get_remove, clean_data] >> \
-    get_procedure
+    check_db = SqlSensor(
+        task_id='wait_for_new_records',
+        conn_id=postgres_conn_id,
+        sql="SELECT COUNT(*) FROM farpost.farpost_staging",
+        poke_interval=60,
+        timeout=600,
+        mode='poke',
+        soft_fail=True
+    )
+
+    initial >> extract_data >> check_db >> load_data >> [get_remove,
+                                                      clean_data] >> \
+    get_procedure >> check_db
 
 if __name__ == "__main__":
     dag.test()

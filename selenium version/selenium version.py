@@ -250,16 +250,14 @@ def scrape_all_profiles(start_url, page):
                 apartament.square.append(
                     value.split(",")[-3] + ',' + value.split(",")[-2][0]
                 )
-            elif (value.split(' ')[-1]).isdigit():
+
+            elif 'этаж'not in value:
                 apartament.square.append(
-                (value.split(",")[-3] + ',' + value.split(",")[-2]).split()[0]
+                    value.split(",")[-2] + "," + value.split(",")[-1][0]
                 )
             else:
                 apartament.square.append(
-                    value.split(",")[-2] + "," + value.split(",")[-1][0]
-
-                    if len(value.split(",")) > 2
-                    else 0
+                (value.split(",")[-3] + ',' + value.split(",")[-2]).split()[0]
                 )
 
         print(f"Пост {len(apartament.post_id)}  {len(apartament.name_announcement)} "
