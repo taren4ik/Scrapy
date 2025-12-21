@@ -45,7 +45,6 @@ pip install -r requirements.txt
 
 
 
-
 Запустить проект:
 
 ```
@@ -53,6 +52,24 @@ bash
 python selenium_version.py
 ```
 
+Опционально запустить скрипт для очистки логов в контейнере 
+/opt/airflow/logs/schedulerва
+
+```
+mkdir -p ~/scripts
+```
+
+```
+chmod +x ~/scripts/cleanup_airflow_scheduler_logs.sh
+```
+
+```
+crontab -e
+```
+
+```
+0 3 * * * /home/$USER/scripts/cleanup_airflow_scheduler_logs.sh >> /tmp/airflow_log_cleanup.log 2>&1
+```
 
 
 ***Над проектом работал:***
