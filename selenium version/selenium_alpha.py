@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import random
 import time
 from dataclasses import dataclass
@@ -87,31 +88,51 @@ def extract_post(soup, **kwargs):
     return posts
 
 
-class ApartmentAttribute:
+def parse_specs(soup):
+    specs = {}
 
-    def __init__(self):
-        self.area = []
-        self.author = []
-        self.square = []
-        self.is_check = []
-        self. room = []
-        self.views = []
-        self.post_id = []
-        self.profile_links = []
-        self.name_announcement = []
+    items = soup.select('[data-test-id="specifications-item"]')
 
-    def clean_attribute(self):
-        self.area = []
-        self.author = []
-        self.square = []
-        self.is_check = []
-        self.room = []
-        self.views = []
-        self.post_id = []
-        self.profile_links = []
-        self.name_announcement = []
+    for item in items:
+        name_el = item.select_one('[data-test-id="specifications-item-name"]')
+        value_el = item.select_one('[data-test-id="specifications-item-value"]')
+
+        if name_el and value_el:
+            name = name_el.text.strip()
+            value = value_el.text.strip()
+            specs[name] = value
+
+    return specs
 
 
+def parse_calculator(soup):
+    data = {}
+
+    # --- цена ---
+    price_el = soup.select_one('[itemprop="price"]')
+    data["price"] = int(price_el["content"]) if price_el else None
+
+    # --- блоки калькулятора ---
+    def extract_by_testid(test_id):
+        el = soup.select_one(f'[data-test-id="{test_id}"]')
+        return el.text.strip() if el else None
+
+    # платеж
+    payment = soup.select_one('[data-test-id="priceInfoBlock-item-payment-amount"]')
+    data["monthly_payment"] = int(re.sub(r'\D', '', payment.text)) if payment else None
+
+    # сумма договора
+    total = soup.select_one('[data-test-id="priceInfoBlock-item-other-amount"]')
+    data["lease_total"] = int(re.sub(r'\D', '', total.text)) if total else None
+
+    # скидка / экономия
+    savings_blocks = soup.select('[data-test-id="priceInfoBlock-item-other-amount"]')
+    if len(savings_blocks) > 1:
+        data["savings"] = int(re.sub(r'\D', '', savings_blocks[1].text))
+    else:
+        data["savings"] = None
+
+    return data
 
 @timer_wrapper
 def scrape_all_profiles(start_url, page):
@@ -133,7 +154,6 @@ def scrape_all_profiles(start_url, page):
     # chrome_options.add_argument(r'user-data-dir=D:\developer\scrapy')
     # chrome_options.add_argument('--profile-directory=Profile 1')
     user_agents = USER_AGENTS
-    apartament = ApartmentAttribute()
 
     while current_url:
         if page == 181:
@@ -156,84 +176,83 @@ def scrape_all_profiles(start_url, page):
 
         cards = soup.find_all(attrs={"data-test-id": "used-offer-card"})
 
-        # for card in cards:
-        #     if card.get('href'):
-        #         url_car = card.get('href')
-        #         print(url_car)
-        #         driver.execute_script("window.open('', '_blank');")
-        #         # Переключение на новую вкладку (где 1 - вторая вкладка)
-        #         driver.switch_to.window(driver.window_handles[1])
-        #         driver.implicitly_wait(10)
-        #         driver.get(url_car)
-        #         time.sleep(random.uniform(3, 7))
-        #         response_car = driver.page_source
-        #         soup_car = BeautifulSoup(response_car, "html.parser")
-        #         #spec = soup_car.find("div",
-        #         # class_="styles_specifications__U_xnL")
-        #
-        #         items = soup_car.select('[data-test-id="specifications-item"]')
-        #
-        #         specs = {}
-        #
-        #         for item in items:
-        #             name = item.select_one(
-        #                 '[data-test-id="specifications-item-name"]').text.strip()
-        #             value = item.select_one(
-        #                 '[data-test-id="specifications-item-value"]').text.strip()
-        #             specs[name] = value
-        #
-        #         df = pd.concat([df, pd.DataFrame([specs])], ignore_index=True)
-        #         driver.close()
+
 
         data = []
 
         for card in cards:
-            url_car = card.get('href')
-
-            if not url_car:
+            url = card.get('href')
+            if not url:
                 continue
 
-            driver.get(url_car)
+            driver.get(url)
+            time.sleep(random.uniform(3, 6))
 
-            time.sleep(random.uniform(3, 6))  # имитация просмотра
+            soup = BeautifulSoup(driver.page_source, "html.parser")
 
-            soup_car = BeautifulSoup(driver.page_source, "html.parser")
+            specs = parse_specs(soup)
+            calc = parse_calculator(soup)
 
-            items = soup_car.select('[data-test-id="specifications-item"]')
+            row = {
+                "url": url,
+                **specs,
+                **calc
+            }
 
-            specs = {}
+            data.append(row)
 
-            for item in items:
-                name = item.select_one(
-                    '[data-test-id="specifications-item-name"]'
-                ).text.strip()
+            time.sleep(random.uniform(1, 3))
 
-                value = item.select_one(
-                    '[data-test-id="specifications-item-value"]'
-                ).text.strip()
+        df = pd.DataFrame(data)
 
-                specs[name] = value
+        # for card in cards:
+        #     url_car = card.get('href')
+        #
+        #     if not url_car:
+        #         continue
+        #
+        #     driver.get(url_car)
+        #
+        #     time.sleep(random.uniform(3, 6))  # имитация просмотра
+        #
+        #     soup_car = BeautifulSoup(driver.page_source, "html.parser")
+        #     sell = soup_car.select('[data-test-id="calculator"]')
+        #     items = soup_car.select('[data-test-id="specifications-item"]')
+        #
+        #     specs = {}
+        #
+        #     for item in items:
+        #         name = item.select_one(
+        #             '[data-test-id="specifications-item-name"]'
+        #         ).text.strip()
+        #
+        #         value = item.select_one(
+        #             '[data-test-id="specifications-item-value"]'
+        #         ).text.strip()
+        #
+        #         specs[name] = value
+        #
+        #     # можно добавить URL как идентификатор
+        #     specs["url"] = url_car
+        #
+        #     data.append(specs)
+        #
+        #     time.sleep(random.uniform(1, 3))  # пауза между объявлениями
+        # # flag = True if page == 1 else False
+        # # df['square'] = df['square'].replace('кв.', 0)
+        # columns_order = [
+        #     "Коробка",
+        #     "Привод",
+        #     "Цвет",
+        #     "VIN-номер",
+        #     "Пробег",
+        #     "Количество владельцев",
+        #     "url"
+        # ]
+        #
+        # df = pd.DataFrame(data)[
+        #     [c for c in columns_order if c in pd.DataFrame(data).columns]]
 
-            # можно добавить URL как идентификатор
-            specs["url"] = url_car
-
-            data.append(specs)
-
-            time.sleep(random.uniform(1, 3))  # пауза между объявлениями
-        # flag = True if page == 1 else False
-        # df['square'] = df['square'].replace('кв.', 0)
-        columns_order = [
-            "Коробка",
-            "Привод",
-            "Цвет",
-            "VIN-номер",
-            "Пробег",
-            "Количество владельцев",
-            "url"
-        ]
-
-        df = pd.DataFrame(data)[
-            [c for c in columns_order if c in pd.DataFrame(data).columns]]
         filename = write_profiles_to_csv(df)
 
 
@@ -248,7 +267,7 @@ def scrape_all_profiles(start_url, page):
         current_url = (
             f"{URL}?page={page}"
         )
-        apartament.clean_attribute()
+
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
     driver.quit()
