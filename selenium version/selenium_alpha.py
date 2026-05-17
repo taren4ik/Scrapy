@@ -220,6 +220,20 @@ def scrape_all_profiles(start_url, page):
 
         flag = True if page == 1 else False
 
+        df['Пробег'] = (
+            df['Пробег']
+                .str.replace('км', '', regex=False)
+                .str.replace('\xa0', '', regex=False)
+                .str.replace(' ', '', regex=False)
+                .astype(int)
+        )
+
+        df['Количество владельцев'] = (
+            df['Количество владельцев']
+                .str.replace(' владелец', '', regex=False)
+                .str.replace(' владельцев', '', regex=False)
+        )
+
         filename = write_profiles_to_csv(df, flag)
 
         df = df[0:0]
@@ -281,6 +295,4 @@ if __name__ == '__main__':
     load_db(
         all_profiles=scrape_all_profiles(f"{URL}/", page=1)
     )
-  # load_db(
-  #       "D:\developer\Scrapy\selenium version\profiles_farpost_2025_10_08.csv"
-  #   )
+
