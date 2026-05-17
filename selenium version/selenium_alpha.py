@@ -134,6 +134,20 @@ def parse_calculator(soup):
 
     return data
 
+
+def parse_images(soup):
+
+    images = list(set(
+        img.get('itemid')
+        for img in soup.select('img[data-carimg="true"]')
+        if img.get('itemid')
+    ))
+
+    return {
+        'main_image': images[0] if images else None,
+        'images': '|'.join(images)
+    }
+
 @timer_wrapper
 def scrape_all_profiles(start_url, page):
     """
@@ -149,10 +163,7 @@ def scrape_all_profiles(start_url, page):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-browser-side-navigation")
     chrome_options.add_argument("--disable-gpu")
-    # chrome_options.add_argument('--allow-profiles-outside-user-dir')
-    # chrome_options.add_argument('--enable-profile-shortcut-manager')
-    # chrome_options.add_argument(r'user-data-dir=D:\developer\scrapy')
-    # chrome_options.add_argument('--profile-directory=Profile 1')
+
     user_agents = USER_AGENTS
 
     while current_url:
@@ -188,15 +199,17 @@ def scrape_all_profiles(start_url, page):
             driver.get(url)
             time.sleep(random.uniform(3, 6))
 
-            soup = BeautifulSoup(driver.page_source, "html.parser")
+            soup_car = BeautifulSoup(driver.page_source, "html.parser")
 
-            specs = parse_specs(soup)
-            calc = parse_calculator(soup)
+            specs = parse_specs(soup_car)
+            calc = parse_calculator(soup_car)
+            images = parse_images(soup_car)
 
             row = {
                 "url": url,
                 **specs,
-                **calc
+                **calc,
+                **images
             }
 
             data.append(row)
@@ -205,57 +218,9 @@ def scrape_all_profiles(start_url, page):
 
         df = pd.DataFrame(data)
 
-        # for card in cards:
-        #     url_car = card.get('href')
-        #
-        #     if not url_car:
-        #         continue
-        #
-        #     driver.get(url_car)
-        #
-        #     time.sleep(random.uniform(3, 6))  # имитация просмотра
-        #
-        #     soup_car = BeautifulSoup(driver.page_source, "html.parser")
-        #     sell = soup_car.select('[data-test-id="calculator"]')
-        #     items = soup_car.select('[data-test-id="specifications-item"]')
-        #
-        #     specs = {}
-        #
-        #     for item in items:
-        #         name = item.select_one(
-        #             '[data-test-id="specifications-item-name"]'
-        #         ).text.strip()
-        #
-        #         value = item.select_one(
-        #             '[data-test-id="specifications-item-value"]'
-        #         ).text.strip()
-        #
-        #         specs[name] = value
-        #
-        #     # можно добавить URL как идентификатор
-        #     specs["url"] = url_car
-        #
-        #     data.append(specs)
-        #
-        #     time.sleep(random.uniform(1, 3))  # пауза между объявлениями
-        # # flag = True if page == 1 else False
-        # # df['square'] = df['square'].replace('кв.', 0)
-        # columns_order = [
-        #     "Коробка",
-        #     "Привод",
-        #     "Цвет",
-        #     "VIN-номер",
-        #     "Пробег",
-        #     "Количество владельцев",
-        #     "url"
-        # ]
-        #
-        # df = pd.DataFrame(data)[
-        #     [c for c in columns_order if c in pd.DataFrame(data).columns]]
+        flag = True if page == 1 else False
 
-        filename = write_profiles_to_csv(df)
-
-
+        filename = write_profiles_to_csv(df, flag)
 
         df = df[0:0]
         if page > 1 and page % 50 != 0:
