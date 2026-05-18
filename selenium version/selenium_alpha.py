@@ -24,8 +24,8 @@ user = os.getenv("DB_USER")
 password = os.getenv("DB_PASS")
 
 
-POST_TYPE = ('legkovye',
-             'kommercheskij',
+POST_TYPE = (#'legkovye',
+             #'kommercheskij',
              'gruzovye',
              'pricepy',
              'spectech',
@@ -33,7 +33,7 @@ POST_TYPE = ('legkovye',
              )
 
 
-URL = f"https://alfaleasing.ru/rasprodazha-avto-s-probegom/legkovye"
+URL = f"https://alfaleasing.ru/rasprodazha-avto-s-probegom/"
 
 
 def timer_wrapper(func):
@@ -55,14 +55,14 @@ def timer_wrapper(func):
     return wrapper
 
 
-def write_profiles_to_csv(df, flag=False):
+def write_profiles_to_csv(df, category,  flag=False):
     """
     Запись информации в файл из DataFrame.
     :param df, flag:
     :return:
     """
     path = datetime.date.today().__str__().replace("-", "_")
-    filename = f"profiles_farpost_{path}.csv"
+    filename = f"profiles_farpost_{path}_{category}.csv"
     df.to_csv(
         f"{filename}", mode="a", sep=";", header=flag, index=False,
         encoding="utf-16"
@@ -149,12 +149,12 @@ def parse_images(soup):
     }
 
 @timer_wrapper
-def scrape_all_profiles(start_url, page):
+def scrape_all_profiles(start_url,category, page):
     """
     Извлекает основную информацию на все объявления
     :return:
     """
-    current_url = start_url
+    current_url = start_url + category
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(
         "--disable-blink-features=AutomationControlled")
@@ -230,11 +230,12 @@ def scrape_all_profiles(start_url, page):
 
         df['Количество владельцев'] = (
             df['Количество владельцев']
-                .str.replace(' владелец', '', regex=False)
                 .str.replace(' владельцев', '', regex=False)
+                .str.replace(' владельца', '', regex=True)
+                .str.strip()
         )
 
-        filename = write_profiles_to_csv(df, flag)
+        filename = write_profiles_to_csv(df, category, flag)
 
         df = df[0:0]
         if page > 1 and page % 50 != 0:
@@ -244,7 +245,7 @@ def scrape_all_profiles(start_url, page):
         if page % 50 == 0:
             driver.quit()
         current_url = (
-            f"{URL}?page={page}"
+            f"{URL}/{category}?page={page}"
         )
 
         time.sleep(random.uniform(3, 8))
@@ -292,7 +293,8 @@ def load_db(filename):
 
 
 if __name__ == '__main__':
-    load_db(
-        all_profiles=scrape_all_profiles(f"{URL}/", page=1)
-    )
-
+    for category in  POST_TYPE:
+        # load_db(
+        #     all_profiles=scrape_all_profiles(f"{URL}/", page=1)
+        # )
+        print(all_profiles=scrape_all_profiles(f"{URL}/", category, page=1))
