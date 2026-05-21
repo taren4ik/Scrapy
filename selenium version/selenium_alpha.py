@@ -3,9 +3,7 @@ import os
 import re
 import random
 import time
-from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -26,9 +24,9 @@ password = os.getenv("DB_PASS")
 
 POST_TYPE = (#'legkovye',
              #'kommercheskij',
-             'gruzovye',
-             'pricepy',
-             'spectech',
+             #'gruzovye',
+             #'pricepy',
+             #'spectech',
              'oborudovanie'
              )
 
@@ -156,6 +154,7 @@ def scrape_all_profiles(start_url,category, page):
     """
     current_url = start_url + category
     chrome_options = webdriver.ChromeOptions()
+
     chrome_options.add_argument(
         "--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
@@ -173,6 +172,7 @@ def scrape_all_profiles(start_url,category, page):
             chrome_options.add_argument(
                 f"user-agent={random.choice(user_agents)}"
             )
+
             driver = webdriver.Chrome(options=chrome_options)
         else:
             driver.execute_script("window.open('', '_blank');")
@@ -220,18 +220,21 @@ def scrape_all_profiles(start_url,category, page):
 
         flag = True if page == 1 else False
 
-        df['Пробег'] = (
-            df['Пробег']
-                .str.replace('км', '', regex=False)
-                .str.replace('\xa0', '', regex=False)
-                .str.replace(' ', '', regex=False)
-                .astype(int)
-        )
+        if category not in ('pricepy','spectech', 'oborudovanie'):
+
+            df['Пробег'] = (
+                df['Пробег']
+                    .str.replace('км', '', regex=False)
+                    .str.replace('\xa0', '', regex=False)
+                    .str.replace(' ', '', regex=False)
+                    .astype(int)
+            )
 
         df['Количество владельцев'] = (
             df['Количество владельцев']
                 .str.replace(' владельцев', '', regex=False)
                 .str.replace(' владельца', '', regex=True)
+                .str.replace(' владелец', '', regex=True)
                 .str.strip()
         )
 
