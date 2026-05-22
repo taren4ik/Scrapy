@@ -119,7 +119,7 @@ def parse_calculator(soup):
     payment = soup.select_one('[data-test-id="priceInfoBlock-item-payment-amount"]')
     data["monthly_payment"] = int(re.sub(r'\D', '', payment.text)) if payment else None
 
-    # сумма договора
+
     total = soup.select_one('[data-test-id="priceInfoBlock-item-other-amount"]')
     data["lease_total"] = int(re.sub(r'\D', '', total.text)) if total else None
 
