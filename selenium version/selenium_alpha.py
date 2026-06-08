@@ -87,6 +87,9 @@ def extract_post(soup, **kwargs):
 
 
 def parse_specs(soup):
+    """
+    Get Specs.
+    """
     specs = {}
 
     items = soup.select('[data-test-id="specifications-item"]')
@@ -146,6 +149,7 @@ def parse_images(soup):
         'images': '|'.join(images)
     }
 
+
 @timer_wrapper
 def scrape_all_profiles(start_url,category, page):
     """
@@ -168,7 +172,7 @@ def scrape_all_profiles(start_url,category, page):
     while current_url:
         if page == 181:
             return True
-        if page == 1 or page % 50 == 0: # нужно корректировать по фирму
+        if page == 1 or page % 50 == 0: # нужно корректировать под ЛД
             chrome_options.add_argument(
                 f"user-agent={random.choice(user_agents)}"
             )
