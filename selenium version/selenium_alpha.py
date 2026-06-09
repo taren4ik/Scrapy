@@ -107,6 +107,11 @@ def parse_specs(soup):
 
 
 def parse_calculator(soup):
+    """
+    Parse price calculator.
+    :param soup:
+    :return:
+    """
     data = {}
 
     # --- цена ---
