@@ -191,19 +191,41 @@ def parse_calculator(soup):
     return data
 
 
-# def parse_images(soup):
-#
-#     images = list(set(
-#         img.get('itemid')
-#         for img in soup.select('img[data-carimg="true"]')
-#         if img.get('itemid')
-#     ))
-#
-#     return {
-#         'main_image': images[0] if images else None,
-#         'images': '|'.join(images)
-#     }
+import json
 
+
+
+import json
+
+
+def parse_images(soup, base_url='https://example.com'):
+    images = []
+
+    for slide in soup.select('[data-images]'):
+        data_images = slide.get('data-images')
+
+        if not data_images:
+            continue
+
+        try:
+            urls = json.loads(data_images)
+
+            for url in urls:
+                if url.startswith('/'):
+                    url = base_url.rstrip('/') + url
+
+                images.append(url)
+
+        except Exception:
+            continue
+
+    # удаляем дубли с сохранением порядка
+    images = list(dict.fromkeys(images))
+
+    return {
+        'main_image': images[0] if images else None,
+        'images': '|'.join(images)
+    }
 
 @timer_wrapper
 def scrape_all_profiles(start_url, page):
@@ -263,23 +285,23 @@ def scrape_all_profiles(start_url, page):
         #     if not url:
         #         continue
 
-                driver.get(url)
-                time.sleep(random.uniform(3, 6))
+            driver.get(url)
+            time.sleep(random.uniform(3, 6))
 
-                soup_car = BeautifulSoup(driver.page_source, "html.parser")
+            soup_car = BeautifulSoup(driver.page_source, "html.parser")
 
-                specs = parse_specs(soup_car)
-                calc = parse_calculator(soup_car)
-            # images = parse_images(soup_car)
+            specs = parse_specs(soup_car)
+            calc = parse_calculator(soup_car)
+            images = parse_images(soup_car)
 
-            # row = {
-            #     "url": url,
-            #     **specs,
-            #     **calc,
-            #     **images
-            # }
-            #
-            # data.append(row)
+            row = {
+                "url": url,
+                **specs,
+                **calc,
+                **images
+            }
+
+            data.append(row)
 
             time.sleep(random.uniform(1, 3))
 
@@ -305,18 +327,18 @@ def scrape_all_profiles(start_url, page):
         #         .str.strip()
         # )
         #
-        # filename = write_profiles_to_csv(df, category, flag)
-        #
-        # df = df[0:0]
-        # if page > 1 and page % 50 != 0:
-        #     driver.close()
-        #     driver.switch_to.window(driver.window_handles[0])
-        # page += 1
-        # if page % 50 == 0:
-        #     driver.quit()
-        # current_url = (
-        #     f"{URL}/{category}?PAGEN_1={page}"
-        # )
+        filename = write_profiles_to_csv(df,  flag)
+
+        df = df[0:0]
+        if page > 1 and page % 50 != 0:
+            driver.close()
+            driver.switch_to.window(driver.window_handles[0])
+        page += 1
+        if page % 50 == 0:
+            driver.quit()
+        current_url = (
+            f"{URL}/?PAGEN_1={page}"
+        )
 
         time.sleep(random.uniform(3, 8))
     driver.switch_to.window(driver.window_handles[0])
