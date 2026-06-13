@@ -280,11 +280,6 @@ def scrape_all_profiles(start_url, page):
                 url = "https://www.vtb-leasing.ru" + link["href"]
                 print(url)
 
-        # for card in cards:
-        #     url = card.get('href')
-        #     if not url:
-        #         continue
-
             driver.get(url)
             time.sleep(random.uniform(3, 6))
 
